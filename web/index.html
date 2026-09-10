@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سبيلي</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#101619; --primary:#1E6F5C; --primary-soft:#E4EFEB; --primary-deep:#14483C;
+  --paper:#F2F4F3; --surface:#FFFFFF; --line:#DDE3E1; --line-soft:#EAEEEC;
+  --text:#101619; --text-2:#5A6663; --text-3:#8A9490; --danger:#9B3A2F;
+  --radius:14px; --rail:2px;
+}
+:root[data-theme="dark"]{
+  --paper:#0D1214; --surface:#141B1E; --line:#26312F; --line-soft:#1C2427;
+  --text:#E8EDEB; --text-2:#9AA6A2; --text-3:#6C7874;
+  --primary:#3F9B83; --primary-soft:#16302A; --primary-deep:#8FD1BE;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);
+  font-family:Cairo,system-ui,sans-serif;font-size:15px;line-height:1.7}
+a{color:var(--primary-deep)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.bar{display:flex;align-items:center;justify-content:space-between;height:68px}
+.mark{display:flex;flex-direction:column;gap:3px}
+.mark b{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.rule{display:flex;align-items:center;gap:5px;height:8px}
+.rule i{display:block;height:var(--rail);background:var(--text);border-radius:2px}
+.rule i:first-child{width:26px}.rule i:last-child{width:26px}
+.rule s{display:block;width:var(--rail);height:9px;background:var(--primary);border-radius:2px}
+.ghost{border:1px solid var(--line);background:transparent;color:var(--text-2);
+  border-radius:10px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer}
+.ghost:hover{border-color:var(--text-3);color:var(--text)}
+
+section.intake{padding:34px 0 26px}
+h1{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--text-2);margin:0 0 22px;max-width:58ch}
+form{display:flex;gap:10px;flex-wrap:wrap}
+input,select,textarea{font:inherit;color:var(--text);background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:transparent}
+#url{flex:1;min-width:280px}
+button.go{background:var(--primary);color:#fff;border:0;border-radius:10px;
+  padding:11px 24px;font:inherit;font-weight:600;cursor:pointer}
+button.go:hover{background:var(--primary-deep);color:#fff}
+:root[data-theme="dark"] button.go:hover{color:var(--ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+
+.progress{margin-top:22px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface);padding:16px 18px}
+.progress .row{display:flex;justify-content:space-between;font-size:14px;color:var(--text-2)}
+.track{margin-top:11px;height:var(--rail);background:var(--line);border-radius:2px;position:relative}
+.track span{position:absolute;inset-block:0;right:0;background:var(--primary);border-radius:2px;
+  transition:width .4s ease}
+.track u{position:absolute;top:-4px;width:var(--rail);height:10px;background:var(--primary);
+  border-radius:2px;transition:right .4s ease}
+
+.progress .row{align-items:center}
+.term{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line);background:transparent;color:var(--text-2);
+  border-radius:8px;padding:4px 9px;font:inherit;font-size:12.5px;cursor:pointer}
+.term:hover{color:var(--text);border-color:var(--text-3)}
+.term svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.console{margin-top:13px;background:#0B1113;color:#C6D2CE;border-radius:10px;
+  padding:11px 13px;max-height:210px;overflow:auto;direction:ltr;text-align:left;
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:12px;line-height:1.65;
+  white-space:pre-wrap;word-break:break-word}
+.console div.warn{color:#E0B25C}
+.console div.err{color:#E58F80}
+.console:empty::after{content:"في انتظار أول سطر…";color:#4E5D5A;direction:rtl}
+
+.head{display:flex;align-items:baseline;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding-bottom:12px;margin:38px 0 22px}
+.head h2{font-size:18px;font-weight:600;margin:0}
+.count{color:var(--text-3);font-size:14px}
+
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));padding-bottom:60px}
+.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.card.wide{grid-column:1/-1}
+video{width:100%;aspect-ratio:9/16;max-height:460px;object-fit:contain;background:#000;display:block}
+.body{padding:15px 16px}
+.title{font-weight:600;font-size:16px;margin:0 0 8px;line-height:1.5}
+.meta{color:var(--text-3);font-size:13px;display:flex;gap:14px;margin-bottom:10px}
+.cap{color:var(--text-2);font-size:13.5px;white-space:pre-wrap;border-top:1px solid var(--line-soft);
+  padding-top:11px;margin:0;max-height:118px;overflow:auto}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+
+.editor{border-top:1px solid var(--line);padding:16px;display:grid;gap:14px;background:var(--paper)}
+label{font-size:13px;color:var(--text-2);display:block;margin-bottom:5px}
+.editor input,.editor textarea{width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pos{display:grid;grid-template-columns:repeat(3,34px);gap:5px}
+.pos button{width:34px;height:26px;border:1px solid var(--line);background:var(--surface);
+  border-radius:6px;cursor:pointer;padding:0}
+.pos button[aria-pressed="true"]{background:var(--primary);border-color:var(--primary)}
+.lines{display:grid;gap:7px;max-height:230px;overflow:auto;padding-left:4px}
+.line{display:grid;grid-template-columns:64px 1fr;gap:8px;align-items:center}
+.line time{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.hint{font-size:12.5px;color:var(--text-3);margin:0}
+.empty{border:1px dashed var(--line);border-radius:var(--radius);padding:44px 20px;
+  text-align:center;color:var(--text-2)}
+
+#toast{position:sticky;bottom:18px;margin:0 auto;width:max-content;background:var(--ink);
+  color:#F2F4F3;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;
+  transition:opacity .25s;pointer-events:none}
+:root[data-theme="dark"] #toast{background:#E8EDEB;color:var(--ink)}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <div class="mark">
+      <b>سبيلي</b>
+      <span class="rule"><i></i><s></s><i></i></span>
+    </div>
+    <button class="ghost" id="theme">تبديل المظهر</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intake">
+    <h1>حوّل التسجيل الطويل إلى مقاطع جاهزة</h1>
+    <p class="sub">ضع رابط الحلقة أو المحاضرة. يعمل كل شيء على جهازك: التفريغ، اختيار اللحظات، القص، والترجمة.</p>
+    <form id="form">
+      <input id="url" type="url" required placeholder="https://youtube.com/watch?v=…">
+      <select id="clips">
+        <option value="3">٣ مقاطع</option>
+        <option value="5" selected>٥ مقاطع</option>
+        <option value="8">٨ مقاطع</option>
+      </select>
+      <select id="aspect">
+        <option value="9:16">طولي ٩:١٦</option>
+        <option value="1:1">مربع ١:١</option>
+      </select>
+      <button class="go" id="go" type="submit">ابدأ</button>
+    </form>
+    <div class="progress" id="prog" hidden>
+      <div class="row"><span id="stage">في الانتظار</span><span id="pct">٠٪</span>
+        <button class="term" id="termBtn" aria-expanded="false" aria-controls="console">
+          <svg viewBox="0 0 24 24"><path d="M4 6l5 5-5 5"/><path d="M12 18h8"/></svg>
+          <span id="termLabel">السجل</span>
+        </button>
+      </div>
+      <div class="track"><span id="fill" style="width:0"></span><u id="notch" style="right:0"></u></div>
+      <div class="console" id="console" hidden></div>
+    </div>
+  </section>
+
+  <div class="head">
+    <h2>المقاطع</h2>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = (u, o) => fetch(u, o).then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.detail || r.status)));
+const POS = [['tl','tc','tr'],['bl','bc','br']];
+let editing = null;
+
+const saved = localStorage.getItem('sabily-theme');
+if (saved) document.documentElement.dataset.theme = saved;
+else if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
+$('#theme').onclick = () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('sabily-theme', next);
+};
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._id); t._id = setTimeout(() => t.classList.remove('on'), 2600);
+}
+const ar = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const dur = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const esc = s => (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$('#form').onsubmit = async e => {
+  e.preventDefault();
+  $('#go').disabled = true;
+  try {
+    const job = await api('/api/jobs', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url: $('#url').value, clips: +$('#clips').value, aspect: $('#aspect').value})
+    });
+    $('#prog').hidden = false;
+    watch(job.job_id);
+  } catch (err) { toast(String(err)); $('#go').disabled = false; }
+};
+
+$('#termBtn').onclick = () => {
+  const box = $('#console'), open = box.hidden;
+  box.hidden = !open;
+  $('#termBtn').setAttribute('aria-expanded', String(open));
+  $('#termLabel').textContent = open ? 'إخفاء السجل' : 'السجل';
+  if (open) box.scrollTop = box.scrollHeight;
+};
+
+function logLine(text) {
+  const box = $('#console');
+  const row = document.createElement('div');
+  if (/\bWARN/.test(text)) row.className = 'warn';
+  if (/\bERRO|\bCRIT/.test(text)) row.className = 'err';
+  row.textContent = text;
+  box.appendChild(row);
+  while (box.childElementCount > 500) box.firstElementChild.remove();
+  const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  if (atEnd) box.scrollTop = box.scrollHeight;
+}
+
+function watch(id) {
+  $('#console').innerHTML = '';
+  const es = new EventSource(`/api/jobs/${id}/events`);
+  es.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+    (d.log || []).forEach(logLine);
+    $('#stage').textContent = d.error || d.stage;
+    $('#pct').textContent = ar(d.progress) + '٪';
+    $('#fill').style.width = d.progress + '%';
+    $('#notch').style.right = d.progress + '%';
+    if (d.status === 'done' || d.status === 'error') {
+      es.close(); $('#go').disabled = false;
+      toast(d.status === 'done' ? 'اكتملت المعالجة' : d.error);
+      load();
+    }
+  };
+  es.onerror = () => { es.close(); $('#go').disabled = false; };
+}
+
+function card(c) {
+  const m = c.meta || {};
+  const open = editing === c.id;
+  return `<article class="card${open ? ' wide' : ''}" id="c-${c.id}">
+    <video controls preload="metadata" src="/outputs/${c.video_path}?v=${m.rendered_at || 0}"></video>
+    <div class="body">
+      <p class="title">${esc(c.title)}</p>
+      <div class="meta"><span>${dur(c.end_sec - c.start_sec)}</span><span>من ${dur(c.start_sec)}</span></div>
+      <p class="cap">${esc(c.caption)}</p>
+      <div class="acts">
+        <button class="ghost" onclick="copyCap('${c.id}')">نسخ الكابشن</button>
+        <a class="ghost" href="/outputs/${c.video_path}" download>تنزيل</a>
+        <button class="ghost" onclick="toggle('${c.id}')">${open ? 'إغلاق التحرير' : 'تحرير'}</button>
+      </div>
+    </div>
+    ${open ? editor(c, m) : ''}
+  </article>`;
+}
+
+function editor(c, m) {
+  const grid = (name, val) => POS.map(row => row.map(p =>
+    `<button type="button" aria-pressed="${val === p}" aria-label="${p}"
+      onclick="pick('${c.id}','${name}','${p}')"></button>`).join('')).join('');
+  const lines = (m.lines || []).map((l, i) => `<div class="line">
+      <time>${l.start.toFixed(1)}s</time>
+      <input value="${esc(l.text)}" oninput="editLine('${c.id}',${i},this.value)">
+    </div>`).join('') || '<p class="hint">لا توجد أسطر ترجمة محفوظة لهذا المقطع.</p>';
+
+  return `<div class="editor">
+    <div><label>العنوان</label><input value="${esc(c.title)}" oninput="field('${c.id}','title',this.value)"></div>
+    <div><label>الكابشن</label><textarea rows="5" oninput="field('${c.id}','caption',this.value)">${esc(c.caption)}</textarea></div>
+    <div class="two">
+      <div><label>الشعار — النص والموضع</label>
+        <input value="${esc(m.brand_text || 'سبيلي')}" oninput="field('${c.id}','brand_text',this.value)">
+        <div class="pos" style="margin-top:8px">${grid('brand_pos', m.brand_pos || 'tr')}</div></div>
+      <div><label>هاشتاق المصدر — النص والموضع</label>
+        <input value="${esc(m.source_tag || '')}" oninput="field('${c.id}','source_tag',this.value)">
+        <div class="pos" style="margin-top:8px">${grid('source_pos', m.source_pos || 'tl')}</div></div>
+    </div>
+    <div><label>أسطر الترجمة</label><div class="lines">${lines}</div></div>
+    <p class="hint">العنوان والكابشن يُحفظان فوراً. تغيير الترجمة أو الشعار يحتاج إعادة رندر.</p>
+    <div class="acts">
+      <button class="ghost" onclick="save('${c.id}')">حفظ</button>
+      <button class="go" onclick="rerender('${c.id}',this)">حفظ وإعادة الرندر</button>
+    </div>
+  </div>`;
+}
+
+const draft = {};
+const d = id => (draft[id] ||= {lines: null});
+function field(id, key, val) { d(id)[key] = val; }
+function editLine(id, i, val) {
+  const c = cache.find(x => x.id === id);
+  d(id).lines ||= JSON.parse(JSON.stringify(c.meta.lines || []));
+  d(id).lines[i].text = val;
+}
+function pick(id, name, p) {
+  d(id)[name] = p;
+  const c = cache.find(x => x.id === id);
+  c.meta[name] = p;
+  render(id);
+}
+
+async function save(id, quiet) {
+  const body = {...d(id)};
+  if (!Object.keys(body).length) return true;
+  try {
+    const updated = await api(`/api/clips/${id}`, {
+      method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const i = cache.findIndex(x => x.id === id); if (i > -1) cache[i] = updated;
+    delete draft[id];
+    if (!quiet) toast('حُفظ');
+    return true;
+  } catch (err) { toast(String(err)); return false; }
+}
+
+async function rerender(id, btn) {
+  btn.disabled = true; btn.textContent = 'جارٍ الرندر…';
+  if (await save(id, true)) {
+    try { await api(`/api/clips/${id}/rerender`, {method: 'POST'}); toast('أُعيد الرندر'); editing = null; await load(); }
+    catch (err) { toast(String(err)); }
+  }
+  btn.disabled = false; btn.textContent = 'حفظ وإعادة الرندر';
+}
+
+function copyCap(id) {
+  const c = cache.find(x => x.id === id);
+  navigator.clipboard.writeText(c.caption).then(() => toast('نُسخ الكابشن'));
+}
+function toggle(id) { editing = editing === id ? null : id; render(); }
+
+let cache = [];
+function render(only) {
+  if (only) {
+    const c = cache.find(x => x.id === only);
+    $(`#c-${only}`).outerHTML = card(c);
+    return;
+  }
+  $('#count').textContent = cache.length ? `${ar(cache.length)} مقطعاً` : '';
+  $('#grid').innerHTML = cache.length ? cache.map(card).join('') :
+    '<div class="empty">لا توجد مقاطع بعد. ضع رابطاً في الأعلى للبدء.</div>';
+}
+async function load() {
+  cache = await api('/api/clips').catch(() => []);
+  render();
+}
+load();
+</script>
+</body>
+</html>

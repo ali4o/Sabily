@@ -1,0 +1,37 @@
+# --- server ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+python-dotenv==1.0.1
+httpx==0.28.1
+
+# --- pipeline ---
+yt-dlp>=2025.1.15
+faster-whisper==1.1.1
+# faster-whisper 1.1.1 targets the huggingface_hub 0.x API; hub 1.x
+# drops `requests` and breaks model download with ModuleNotFoundError.
+huggingface-hub>=0.25,<1.0
+requests>=2.31
+opencv-python-headless==4.10.0.84
+numpy<2.0
+
+# --- GPU (اختياري لكن مطلوب لتشغيل Whisper على كرت nvidia) ---
+# CTranslate2 يربط cuBLAS و cuDNN وقت التشغيل ولا تأتيان معه.
+# بدونهما: "Library cublas64_12.dll is not found" ثم سقوط تلقائي إلى المعالج.
+#   python -m pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
+# ~800MB. app/pipeline/transcribe.py يضيف مساراتها تلقائياً على ويندوز.
+
+# --- dev ---
+pytest==8.3.4
+
+# Face tracking uses OpenCV only (Haar cascade ships with the wheel).
+# mediapipe was dropped on purpose: it pulls jax + jaxlib + matplotlib +
+# a second OpenCV build (~250MB) for one function we can do without.
+# Optional upgrade — better detection, no extra pip deps:
+#   download face_detection_yunet_2023mar.onnx (~230KB) into data/models/
+#   from https://github.com/opencv/opencv_zoo (models/face_detection_yunet)
+
+# FFmpeg is NOT a pip package. Install it separately and make sure the build
+# includes libass + fribidi + harfbuzz (needed for Arabic subtitles).
+#   Windows: winget install Gyan.FFmpeg
+#   Linux:   sudo apt install ffmpeg

@@ -1,0 +1,16 @@
+# secrets & local config
+.env
+
+# generated media and state — never commit
+data/
+outputs/
+*.db
+*.db-wal
+*.db-shm
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
