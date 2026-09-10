@@ -4,6 +4,8 @@
 # generated media and state — never commit
 data/
 outputs/
+assets/terms.json
+*.zip
 *.db
 *.db-wal
 *.db-shm

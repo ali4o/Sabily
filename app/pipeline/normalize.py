@@ -12,6 +12,7 @@ assets/terms.json:
     }
 """
 
+import copy
 import difflib
 import json
 import logging
@@ -41,19 +42,25 @@ DEFAULT_TERMS = {
 
 
 def load_terms() -> dict:
+    """Always returns a fresh copy.
+
+    Handing back DEFAULT_TERMS itself let callers mutate the module-level dict,
+    so a term learned in one job leaked into every later job in the same
+    process — invisible in the file, visible in the output.
+    """
     path = settings.terms_file
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             json.dumps(DEFAULT_TERMS, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        return DEFAULT_TERMS
+        return copy.deepcopy(DEFAULT_TERMS)
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return {"replace": data.get("replace", {}), "split": data.get("split", [])}
     except Exception as exc:  # noqa: BLE001 - a broken glossary must not stop a job
         log.warning("terms file unreadable (%s), using defaults", exc)
-        return DEFAULT_TERMS
+        return copy.deepcopy(DEFAULT_TERMS)
 
 
 def _strip_punct(token: str) -> tuple[str, str]:

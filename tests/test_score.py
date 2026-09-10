@@ -159,12 +159,28 @@ def test_subtitle_lines_stay_on_screen_long_enough():
         assert end - start >= MIN_LINE_SEC - 0.01
 
 
-def test_glossary_learns_a_word_swap_but_not_a_rewrite():
+def test_glossary_learns_a_word_swap_but_not_a_rewrite(tmp_path, monkeypatch):
+    """Runs against a throwaway glossary — never the user's real one."""
+    from app.config import settings
     from app.pipeline import normalize
 
+    monkeypatch.setattr(settings.__class__, "terms_file",
+                        property(lambda self: tmp_path / "terms.json"), raising=False)
     learned = normalize.learn(
         [{"text": "نضع كيفريمم هنا"}, {"text": "جملة قديمة تماما تتغير بالكامل هنا"}],
         [{"text": "نضع Keyframe هنا"}, {"text": "نص مختلف"}],
     )
     assert learned.get("كيفريمم") == "Keyframe"
     assert len(learned) == 1
+
+
+def test_a_known_term_is_not_learned_twice(tmp_path, monkeypatch):
+    """Re-learning an entry the glossary already has must be a no-op."""
+    from app.config import settings
+    from app.pipeline import normalize
+
+    monkeypatch.setattr(settings.__class__, "terms_file",
+                        property(lambda self: tmp_path / "terms.json"), raising=False)
+    old, new = [{"text": "نضع كيفريمم هنا"}], [{"text": "نضع Keyframe هنا"}]
+    assert normalize.learn(old, new) == {"كيفريمم": "Keyframe"}
+    assert normalize.learn(old, new) == {}
