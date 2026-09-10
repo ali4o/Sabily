@@ -1,6 +1,7 @@
 """Stage 1 — fetch the source video and a 16kHz mono WAV for ASR."""
 
 import logging
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +19,7 @@ class Source:
     duration: float
     url: str
     webpage_url: str
+    channel: str = ""
 
 
 def _fmt() -> str:
@@ -122,6 +124,7 @@ def fetch(url: str, job_dir: Path) -> Source:
         duration=float(info.get("duration") or 0),
         url=url,
         webpage_url=info.get("webpage_url") or url,
+        channel=info.get("channel") or info.get("uploader") or "",
     )
 
 
@@ -134,6 +137,13 @@ def extract_audio(video: Path, out: Path) -> Path:
     ]
     subprocess.run(cmd, check=True)
     return out
+
+
+def as_hashtag(name: str) -> str:
+    """Channel name -> a single clean hashtag. Empty string when unusable."""
+    cleaned = re.sub(r"[^\w\u0600-\u06FF ]+", "", name or "").strip()
+    cleaned = re.sub(r"\s+", "_", cleaned)
+    return f"#{cleaned}" if cleaned else ""
 
 
 def timestamped_url(url: str, start_sec: float) -> str:

@@ -161,8 +161,12 @@ def generate_metadata(text: str, lang: str | None = None) -> dict[str, Any]:
         tags = data.get("hashtags") or []
         if isinstance(tags, str):
             tags = tags.split()
+        title = str(data.get("title", "")).strip()
+        # a "title" that is really a paragraph is a model failure, not a title
+        if len(title) > 90 or len(title.split()) > 14 or not title:
+            title = _fallback_meta(text)["title"]
         return {
-            "title": str(data.get("title", "")).strip()[:80] or _fallback_meta(text)["title"],
+            "title": title[:80],
             "summary": str(data.get("summary", "")).strip(),
             "hashtags": ["#" + t.lstrip("#").replace(" ", "_") for t in tags][:5],
         }
@@ -178,7 +182,7 @@ def rerank(candidates: list[Any], keep: int) -> list[int]:
     if provider is None or not settings.llm_rerank or len(candidates) <= keep:
         return default
     listing = "\n".join(
-        f"[{i}] ({c.duration:.0f}s) " + " ".join(c.text.split()[:40])
+        f"[{i}] ({c.duration:.0f}s) " + " ".join(c.text.split()[:120])
         for i, c in enumerate(candidates)
     )
     try:

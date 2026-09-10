@@ -309,7 +309,8 @@ async function save(id, quiet) {
     });
     const i = cache.findIndex(x => x.id === id); if (i > -1) cache[i] = updated;
     delete draft[id];
-    if (!quiet) toast('حُفظ');
+    const n = Object.keys(updated.learned || {}).length;
+    if (!quiet) toast(n ? `حُفظ — أُضيف ${ar(n)} مصطلح للقاموس` : 'حُفظ');
     return true;
   } catch (err) { toast(String(err)); return false; }
 }

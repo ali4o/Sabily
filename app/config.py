@@ -47,12 +47,15 @@ class Settings:
     whisper_device: str = os.getenv("WHISPER_DEVICE", "cuda")
     whisper_compute: str = os.getenv("WHISPER_COMPUTE", "int8_float16")
     whisper_lang: str = os.getenv("WHISPER_LANG", "ar")
+    whisper_prompt: str = os.getenv("WHISPER_PROMPT", "")
+    beam_size: int = _int("BEAM_SIZE", 5)
 
     # --- clip selection ---
     clips_per_video: int = _int("CLIPS_PER_VIDEO", 5)
     min_clip_sec: float = _float("MIN_CLIP_SEC", 20.0)
     max_clip_sec: float = _float("MAX_CLIP_SEC", 75.0)
     llm_candidates: int = _int("LLM_CANDIDATES", 12)
+    intro_sec: float = _float("INTRO_SEC", 75.0)   # opening stretch to avoid
 
     # --- LLM ---
     llm_provider: str = os.getenv("LLM_PROVIDER", "ollama")  # ollama|gemini|openai|none
@@ -71,9 +74,20 @@ class Settings:
     burn_subtitles: bool = _bool("BURN_SUBTITLES", True)
     subtitle_font: str = os.getenv("SUBTITLE_FONT", "Cairo")
     fonts_dir: Path = BASE_DIR / os.getenv("FONTS_DIR", "assets/fonts")
+    terms_file: Path = BASE_DIR / os.getenv("TERMS_FILE", "assets/terms.json")
     crf: int = _int("CRF", 20)
     preset: str = os.getenv("PRESET", "veryfast")
+    encoder: str = os.getenv("ENCODER", "auto")    # auto|nvenc|cpu
+    loudnorm: bool = _bool("LOUDNORM", True)
     caption_lang: str = os.getenv("CAPTION_LANG", "ar")
+
+    # --- on-video attribution ---
+    brand_watermark: bool = _bool("BRAND_WATERMARK", True)
+    brand_text: str = os.getenv("BRAND_TEXT", "سبيلي")
+    source_tag: bool = _bool("SOURCE_TAG", True)
+    brand_pos: str = os.getenv("BRAND_POS", "tr")     # tr|tl|br|bl
+    source_pos: str = os.getenv("SOURCE_POS", "tl")
+    keep_source: bool = _bool("KEEP_SOURCE", True)    # required for re-editing
 
     def ensure_dirs(self) -> None:
         for d in (self.work_dir, self.outputs_dir, self.db_path.parent):

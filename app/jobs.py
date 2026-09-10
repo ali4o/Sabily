@@ -123,6 +123,27 @@ def add_clip(job_id: str, clip: dict[str, Any]) -> str:
     return clip_id
 
 
+def get_clip(clip_id: str) -> Optional[dict[str, Any]]:
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    if not row:
+        return None
+    d = dict(row)
+    d["meta"] = json.loads(d.get("meta") or "{}")
+    return d
+
+
+def update_clip(clip_id: str, **fields: Any) -> None:
+    if "meta" in fields and isinstance(fields["meta"], dict):
+        fields["meta"] = json.dumps(fields["meta"], ensure_ascii=False)
+    if not fields:
+        return
+    cols = ", ".join(f"{k}=?" for k in fields)
+    with _lock, connect() as conn:
+        conn.execute(f"UPDATE clips SET {cols} WHERE id=?", (*fields.values(), clip_id))
+        conn.commit()
+
+
 def delete_clip(clip_id: str) -> None:
     with _lock, connect() as conn:
         conn.execute("DELETE FROM clips WHERE id=?", (clip_id,))
@@ -177,16 +198,60 @@ def list_clips(job_id: str | None = None) -> list[dict[str, Any]]:
 _q: "queue.Queue[str]" = queue.Queue()
 _worker: threading.Thread | None = None
 
+# --------------------------------------------------------------------------- #
+# log capture — so the dashboard can show what the pipeline is doing right now
+# --------------------------------------------------------------------------- #
+
+MAX_LINES = 500
+_buffers: dict[str, list[str]] = {}
+_current: str | None = None
+
+
+class _JobLogHandler(logging.Handler):
+    """Route sabily.* log records into the running job's buffer."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if _current is None:
+            return
+        buf = _buffers.setdefault(_current, [])
+        try:
+            stamp = time.strftime("%H:%M:%S", time.localtime(record.created))
+            buf.append(f"{stamp}  {record.levelname[:4]:<4} {record.getMessage()}")
+        except Exception:  # noqa: BLE001 - logging must never raise
+            return
+        if len(buf) > MAX_LINES:
+            del buf[: len(buf) - MAX_LINES]
+
+
+def attach_log_capture() -> None:
+    root = logging.getLogger()
+    # the handler's own level is not enough: a logger whose effective level is
+    # WARNING never hands INFO records to any handler.
+    if root.level > logging.INFO or root.level == logging.NOTSET:
+        root.setLevel(logging.INFO)
+    if not any(isinstance(h, _JobLogHandler) for h in root.handlers):
+        root.addHandler(_JobLogHandler(level=logging.INFO))
+
+
+def log_lines(job_id: str, after: int = 0) -> tuple[list[str], int]:
+    buf = _buffers.get(job_id, [])
+    after = max(0, min(after, len(buf)))
+    return buf[after:], len(buf)
+
 
 def _loop(handler: Callable[[str], None]) -> None:
+    global _current
     while True:
         job_id = _q.get()
+        _current = job_id
+        _buffers.setdefault(job_id, [])
         try:
             handler(job_id)
         except Exception as exc:  # noqa: BLE001 - worker must never die
             log.exception("job %s failed", job_id)
             update_job(job_id, status="error", error=str(exc)[:500], stage="فشل")
         finally:
+            _current = None
             _q.task_done()
 
 

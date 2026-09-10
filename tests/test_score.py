@@ -90,3 +90,81 @@ def test_hook_opener_scores_higher_than_filler():
 
 def test_empty_input_is_safe():
     assert select([]) == []
+
+
+def test_intro_is_penalised_against_an_identical_later_clip():
+    """The same words early in the video must rank below their later twin."""
+    from app.pipeline.score import build_sentences, score_candidate
+
+    def at(offset):
+        words = [Word(start=offset + i * 0.5, end=offset + i * 0.5 + 0.45, text=tok)
+                 for i, tok in enumerate(
+                     "لماذا يفشل أغلب الناس في تطبيق العادات الجديدة كل مرة.".split())]
+        return build_sentences(words)
+
+    early = score_candidate(at(2.0), {})
+    later = score_candidate(at(600.0), {})
+    assert later.score > early.score
+    assert early.parts["intro"] > 0 and later.parts["intro"] == 0
+
+
+def test_promotional_talk_is_penalised():
+    from app.pipeline.score import build_sentences, score_candidate
+
+    def build(text, offset=600.0):
+        return build_sentences([
+            Word(start=offset + i * 0.5, end=offset + i * 0.5 + 0.45, text=tok)
+            for i, tok in enumerate(text.split())])
+
+    promo = score_candidate(build(
+        "لا تنسوا الاشتراك في القناة والضغط على اللايك وتفعيل الجرس."), {})
+    clean = score_candidate(build(
+        "الفكرة الأساسية هي تقليل حجم العادة إلى أصغر خطوة ممكنة."), {})
+    assert promo.parts["promo"] > 0
+    assert clean.score > promo.score
+
+
+def test_completeness_follows_the_silence_after_the_last_word():
+    from app.pipeline.score import build_sentences, _completeness
+
+    def tail(gap):
+        words = [Word(start=0.0, end=0.4, text="كلام"),
+                 Word(start=0.5, end=0.9, text="بلا"),
+                 Word(start=1.0, end=1.4, text="ترقيم"),
+                 Word(start=1.4 + gap, end=1.8 + gap, text="ثم")]
+        return build_sentences(words)[0]
+
+    assert _completeness([tail(1.5)]) > _completeness([tail(0.7)])
+    assert _completeness([tail(0.7)]) > _completeness([tail(0.05)])
+
+
+def test_low_confidence_speech_scores_lower():
+    from app.pipeline.score import build_sentences, score_candidate
+
+    text = "الفكرة الأساسية هي تقليل حجم العادة إلى أصغر خطوة ممكنة."
+    def build(conf):
+        return build_sentences([
+            Word(start=600 + i * 0.5, end=600 + i * 0.5 + 0.45, text=tok, conf=conf)
+            for i, tok in enumerate(text.split())])
+
+    assert score_candidate(build(0.95), {}).score > score_candidate(build(0.3), {}).score
+
+
+def test_subtitle_lines_stay_on_screen_long_enough():
+    from app.pipeline.subtitle import MIN_LINE_SEC, group_lines
+
+    words = [Word(start=0.0, end=0.25, text="نعم."),
+             Word(start=5.0, end=5.3, text="تمام.")]
+    for start, end, _ in group_lines(words):
+        assert end - start >= MIN_LINE_SEC - 0.01
+
+
+def test_glossary_learns_a_word_swap_but_not_a_rewrite():
+    from app.pipeline import normalize
+
+    learned = normalize.learn(
+        [{"text": "نضع كيفريمم هنا"}, {"text": "جملة قديمة تماما تتغير بالكامل هنا"}],
+        [{"text": "نضع Keyframe هنا"}, {"text": "نص مختلف"}],
+    )
+    assert learned.get("كيفريمم") == "Keyframe"
+    assert len(learned) == 1

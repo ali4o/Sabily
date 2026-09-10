@@ -24,6 +24,7 @@ class Word:
     start: float
     end: float
     text: str
+    conf: float = 1.0     # 0..1, derived from the segment's avg_logprob
 
 
 def _add_cuda_dll_dirs() -> list[str]:
@@ -99,15 +100,19 @@ def _transcribe(
             word_timestamps=True,
             vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 400},
-            beam_size=1,          # 4GB VRAM: greedy is enough and much lighter
+            beam_size=settings.beam_size,
             condition_on_previous_text=False,
+            initial_prompt=settings.whisper_prompt or None,
         )
         total = float(getattr(info, "duration", 0) or 0)
         for seg in segments:
+            # avg_logprob is roughly -1.0 (bad) to 0.0 (confident)
+            conf = max(0.0, min(1.0, 1.0 + float(getattr(seg, "avg_logprob", 0.0) or 0.0)))
             for w in (seg.words or []):
                 text = (w.word or "").strip()
                 if text:
-                    words.append(Word(start=float(w.start), end=float(w.end), text=text))
+                    words.append(Word(start=float(w.start), end=float(w.end),
+                                      text=text, conf=conf))
             if on_progress and total:
                 on_progress(min(1.0, seg.end / total))
     finally:

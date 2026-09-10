@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app import jobs
 from app.config import settings
-from app.pipeline import download, llm, reframe, render, score, subtitle
+from app.pipeline import download, llm, normalize, reframe, render, score, subtitle
 from app.pipeline.media import probe
 from app.pipeline.transcribe import Word
 from app.pipeline import transcribe as asr
@@ -51,6 +51,7 @@ def process(job_id: str) -> None:
         )
         if not words:
             raise RuntimeError("لم يتم استخراج أي كلام من الفيديو")
+        words = normalize.apply(words)
 
         # 3 — heuristic selection (CPU, cheap) ------------------------------
         _stage(job_id, "اختيار أفضل اللحظات", 58)
@@ -71,8 +72,10 @@ def process(job_id: str) -> None:
             crop = reframe.build_crop(
                 src.video_path, cand.start, cand.end, info["width"], info["height"]
             )
+            tag = download.as_hashtag(src.channel)
             ass = subtitle.write_ass(
-                words, cand.start, cand.end, work / f"clip_{n:02d}.ass"
+                words, cand.start, cand.end, work / f"clip_{n:02d}.ass",
+                source_tag=tag,
             )
             mp4 = out_dir / f"clip_{n:02d}.mp4"
             render.render_clip(src.video_path, mp4, cand.start, cand.end, crop, ass)
@@ -94,6 +97,21 @@ def process(job_id: str) -> None:
                     "duration": round(cand.duration, 1),
                     "hashtags": meta.get("hashtags", []),
                     "crop_mode": crop["mode"],
+                    "source_tag": tag,
+                    "brand_text": settings.brand_text,
+                    "brand_pos": settings.brand_pos,
+                    "source_pos": settings.source_pos,
+                    "crop": crop,
+                    "source_video": str(src.video_path),
+                    "lines": [
+                        {"start": round(max(0.0, s - cand.start), 2),
+                         "end": round(min(cand.end - cand.start, e - cand.start), 2),
+                         "text": tx}
+                        for s, e, tx in subtitle.group_lines(
+                            [w for w in words
+                             if w.start >= cand.start - 0.2 and w.end <= cand.end + 0.2]
+                        )
+                    ],
                     "score_parts": cand.parts,
                     "source_title": src.title,
                     "transcript": cand.text,
@@ -112,5 +130,7 @@ def process(job_id: str) -> None:
         log.debug("traceback", exc_info=True)
         jobs.update_job(job_id, status="error", error=str(exc)[:500], stage="فشل")
     finally:
-        if not options.get("keep_source"):
+        # the source stays by default: re-rendering an edited clip needs it.
+        # remove it from the dashboard, or set KEEP_SOURCE=false in .env.
+        if not (options.get("keep_source") or settings.keep_source):
             shutil.rmtree(work, ignore_errors=True)

@@ -37,6 +37,24 @@ def subtitles_filter(ass_path: Path) -> str:
     return f
 
 
+def _has_nvenc() -> bool:
+    try:
+        out = subprocess.run([settings.ffmpeg, "-hide_banner", "-encoders"],
+                             capture_output=True, text=True, timeout=30).stdout
+        return "h264_nvenc" in out
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _video_args(use_gpu: bool) -> list[str]:
+    if use_gpu:
+        # NVENC on this class of card is roughly 3x faster than x264 and frees
+        # the CPU for the next clip's face pass. cq is the quality knob here.
+        return ["-c:v", "h264_nvenc", "-preset", "p4", "-rc", "vbr",
+                "-cq", str(settings.crf), "-b:v", "0"]
+    return ["-c:v", "libx264", "-preset", settings.preset, "-crf", str(settings.crf)]
+
+
 def render_clip(
     source: Path,
     out_path: Path,
@@ -54,20 +72,34 @@ def render_clip(
     if ass_path and settings.burn_subtitles:
         chain.append(subtitles_filter(ass_path))
 
-    cmd = [
-        settings.ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", f"{max(0.0, start):.3f}",
-        "-to", f"{end:.3f}",
-        "-i", str(source),
-        "-vf", ",".join(chain),
-        "-c:v", "libx264", "-preset", settings.preset, "-crf", str(settings.crf),
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "128k", "-ac", "2",
-        "-movflags", "+faststart",
-        str(out_path),
-    ]
-    log.info("rendering %s (%.1fs-%.1fs, crop=%s)", out_path.name, start, end, crop["mode"])
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    audio = ["-c:a", "aac", "-b:a", "160k", "-ac", "2", "-ar", "48000"]
+    if settings.loudnorm:
+        # Social platforms normalise to about -14 LUFS on playback. Doing it
+        # here means the clip sounds the same as everything else in the feed
+        # instead of being quietly turned down.
+        audio = ["-af", "loudnorm=I=-14:TP=-1.5:LRA=11"] + audio
+
+    def build(use_gpu: bool) -> list[str]:
+        return [
+            settings.ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
+            "-ss", f"{max(0.0, start):.3f}",
+            "-to", f"{end:.3f}",
+            "-i", str(source),
+            "-vf", ",".join(chain),
+            *_video_args(use_gpu),
+            "-pix_fmt", "yuv420p",
+            *audio,
+            "-movflags", "+faststart",
+            str(out_path),
+        ]
+
+    want_gpu = settings.encoder == "nvenc" or (settings.encoder == "auto" and _has_nvenc())
+    log.info("rendering %s (%.1fs-%.1fs, crop=%s, encoder=%s)",
+             out_path.name, start, end, crop["mode"], "nvenc" if want_gpu else "x264")
+    proc = subprocess.run(build(want_gpu), capture_output=True, text=True)
+    if proc.returncode != 0 and want_gpu:
+        log.warning("nvenc failed (%s), falling back to x264", proc.stderr[-160:].strip())
+        proc = subprocess.run(build(False), capture_output=True, text=True)
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg failed: {proc.stderr[-400:]}")
     return out_path
