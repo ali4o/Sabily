@@ -22,9 +22,20 @@ class Source:
     channel: str = ""
 
 
-def _fmt() -> str:
-    h = settings.max_height
+def _fmt(height: int | None = None) -> str:
+    h = height or settings.max_height
     return f"bestvideo[height<={h}][ext=mp4]+bestaudio[ext=m4a]/best[height<={h}]/best"
+
+
+def fetch_height(quality: str | None = None) -> int:
+    """Source height to request. Per-job quality never fetches *lower*
+    than it needs (avoids upscaling 720p -> 2K when 1440p exists),
+    but still honours a higher MAX_HEIGHT cap."""
+    if not quality:
+        return settings.max_height
+    from app.config import QUALITY_SOURCE_HEIGHT, normalize_quality
+    need = QUALITY_SOURCE_HEIGHT[normalize_quality(quality)]
+    return max(settings.max_height, need)
 
 
 # YouTube rejects some clients with 403 depending on the video and the day.
@@ -51,9 +62,9 @@ def _explain(err: str) -> str:
     return f"فشل التحميل: {err.strip().splitlines()[-1][:200]}"
 
 
-def _base_opts(job_dir: Path) -> dict:
+def _base_opts(job_dir: Path, height: int | None = None) -> dict:
     opts = {
-        "format": _fmt(),
+        "format": _fmt(height),
         "outtmpl": str(job_dir / "source.%(ext)s"),
         "merge_output_format": "mp4",
         "quiet": True,
@@ -69,21 +80,23 @@ def _base_opts(job_dir: Path) -> dict:
     return opts
 
 
-def fetch(url: str, job_dir: Path) -> Source:
+def fetch(url: str, job_dir: Path, quality: str | None = None) -> Source:
     """Download the video, then extract audio.
 
     Tries each player client in turn; raises a single readable error if all
     of them fail, instead of letting a yt-dlp traceback escape.
+    `quality` raises the requested source height (never lowers it).
     """
     from yt_dlp import YoutubeDL
     from yt_dlp.utils import DownloadError
 
     job_dir.mkdir(parents=True, exist_ok=True)
+    height = fetch_height(quality)
     info = None
     last_error = ""
 
     for client in PLAYER_CLIENTS:
-        opts = _base_opts(job_dir)
+        opts = _base_opts(job_dir, height)
         opts["extractor_args"] = {"youtube": {"player_client": [client]}}
         try:
             with YoutubeDL(opts) as ydl:

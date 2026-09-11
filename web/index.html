@@ -35,6 +35,13 @@ header{border-bottom:1px solid var(--line);background:var(--surface)}
 .ghost{border:1px solid var(--line);background:transparent;color:var(--text-2);
   border-radius:10px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer}
 .ghost:hover{border-color:var(--text-3);color:var(--text)}
+.actions{display:flex;gap:8px;align-items:center}
+.ghost.danger{color:var(--danger);border-color:var(--danger)}
+.ghost.danger:hover{background:var(--danger);border-color:var(--danger);color:#fff}
+.topnav{display:flex;gap:6px;padding:10px 20px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--line)}
+.topnav a{font-size:13px;color:var(--text-2);text-decoration:none;border:1px solid transparent;border-radius:8px;padding:5px 12px}
+.topnav a:hover{color:var(--text);border-color:var(--line)}
+.topnav a.on{color:var(--primary-deep);border-color:var(--primary);background:var(--primary-soft)}
 
 section.intake{padding:34px 0 26px}
 h1{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
@@ -102,6 +109,24 @@ label{font-size:13px;color:var(--text-2);display:block;margin-bottom:5px}
 .line{display:grid;grid-template-columns:64px 1fr;gap:8px;align-items:center}
 .line time{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
 .hint{font-size:12.5px;color:var(--text-3);margin:0}
+.checks{display:flex;gap:16px;align-items:center;margin-top:10px;font-size:13.5px;color:var(--text-2);flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.checks input{width:16px;height:16px;accent-color:var(--primary)}
+.qnote{font-size:12.5px;color:var(--text-3)}
+#calib{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:grid;place-items:center;padding:16px;overflow:auto}
+#calib[hidden]{display:none}
+.sheet{background:var(--surface);border-radius:var(--radius);max-width:640px;width:100%;padding:20px;display:grid;gap:12px}
+.sheet h2{font-size:17px;margin:0}
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.thumbs img{height:72px;border-radius:8px;cursor:pointer;border:2px solid transparent;flex:none}
+.thumbs img.on{border-color:var(--primary)}
+.frameWrap{position:relative;line-height:0;border-radius:10px;overflow:hidden;background:#000;touch-action:none}
+.frameWrap img{width:100%;display:block;pointer-events:none}
+#calibBox{position:absolute;border:2.5px solid var(--green,#3DB383);box-shadow:0 0 0 999px rgba(0,0,0,.45);cursor:grab;border-radius:4px}
+#calibBox::after{content:attr(data-a);position:absolute;top:4px;inset-inline-start:6px;font-size:11px;color:#fff;background:rgba(0,0,0,.55);border-radius:6px;padding:0 7px;direction:ltr}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chk{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--text)}
+.chk input{width:16px;height:16px;accent-color:var(--primary)}
 .empty{border:1px dashed var(--line);border-radius:var(--radius);padding:44px 20px;
   text-align:center;color:var(--text-2)}
 
@@ -121,9 +146,20 @@ label{font-size:13px;color:var(--text-2);display:block;margin-bottom:5px}
       <b>سبيلي</b>
       <span class="rule"><i></i><s></s><i></i></span>
     </div>
-    <button class="ghost" id="theme">تبديل المظهر</button>
+    <div class="actions">
+      <button class="ghost" id="restart" title="إعادة تشغيل السيرفر">↻ إعادة التشغيل</button>
+      <button class="ghost danger" id="power" title="إيقاف السيرفر">⏻ إيقاف</button>
+      <button class="ghost" id="theme">تبديل المظهر</button>
+    </div>
   </div>
 </header>
+<nav class="wrap topnav">
+  <a href="/" class="on">الرئيسية</a>
+  <a href="/static/appearance.html">تخصيص المخرجات</a>
+  <a href="/static/stats.html">الإحصائيات</a>
+  <a href="/static/settings.html">الإعدادات</a>
+  <a href="/static/video-mockup.html">المعاينة</a>
+</nav>
 
 <main class="wrap">
   <section class="intake">
@@ -140,10 +176,25 @@ label{font-size:13px;color:var(--text-2);display:block;margin-bottom:5px}
         <option value="9:16">طولي ٩:١٦</option>
         <option value="1:1">مربع ١:١</option>
       </select>
+      <select id="quality" title="جودة الإخراج">
+        <option value="HD">HD ٧٢٠</option>
+        <option value="FHD" selected>FHD ١٠٨٠</option>
+        <option value="QHD">2K ١٤٤٠</option>
+      </select>
       <button class="go" id="go" type="submit">ابدأ</button>
+      <button class="ghost" id="prevBtn" type="button" title="عرض فريم حقيقي من منتصف الفيديو قبل البدء">👁 معاينة</button>
     </form>
+    <div class="checks">
+      <label><input type="checkbox" id="optLogo" checked> الشعار</label>
+      <label><input type="checkbox" id="optTag" checked> الهاشتاق</label>
+      <label><input type="checkbox" id="optSubs" checked> النص السفلي</label>
+      <label title="بطاقة بداية ونهاية باسم القناة"><input type="checkbox" id="optCards"> بطاقة بداية/نهاية</label>
+      <label title="إظهار فريمات وضبط القص يدوياً قبل بدء المعالجة"><input type="checkbox" id="optCalib" checked> 📐 ضبط القص أولاً</label>
+      <span class="qnote" id="qnote"></span>
+    </div>
     <div class="progress" id="prog" hidden>
       <div class="row"><span id="stage">في الانتظار</span><span id="pct">٠٪</span>
+        <button class="term" id="cancelBtn" title="إلغاء المهمة الجارية">✕ إلغاء</button>
         <button class="term" id="termBtn" aria-expanded="false" aria-controls="console">
           <svg viewBox="0 0 24 24"><path d="M4 6l5 5-5 5"/><path d="M12 18h8"/></svg>
           <span id="termLabel">السجل</span>
@@ -151,8 +202,24 @@ label{font-size:13px;color:var(--text-2);display:block;margin-bottom:5px}
       </div>
       <div class="track"><span id="fill" style="width:0"></span><u id="notch" style="right:0"></u></div>
       <div class="console" id="console" hidden></div>
+      <div id="zipRow" hidden style="margin-top:10px"><a class="ghost" id="zipLink" href="#">⬇ تحميل الكل ZIP</a></div>
     </div>
   </section>
+
+  <div class="card" id="pvCard" hidden style="margin-bottom:26px">
+    <div class="body">
+      <p class="title">👁 معاينة قبل البدء — ٥ فريمات حقيقية من الفيديو</p>
+      <div class="meta" id="pvMsg" style="margin-bottom:10px"></div>
+      <img id="pvImg" alt="فريم حقيقي من الفيديو" style="width:100%;max-height:380px;object-fit:contain;background:#000;border-radius:10px">
+      <div class="thumbs" id="pvThumbs" style="margin-top:10px"></div>
+      <div class="acts">
+        <button class="ghost" id="pvShuffle">🎲 فريم آخر</button>
+        <button class="ghost" id="pvCalib">📐 ضبط القص</button>
+        <button class="go" id="pvStart">▶ ابدأ المهمة</button>
+      </div>
+      <p class="hint">٥ فريمات حقيقية من أماكن مختلفة — انقر أي مصغرة لعرضها كبيرة، أو 🎲 لواحد عشوائي من المنتصف. «ضبط القص» يكمل على نفس الجلسة دون إعادة تحميل.</p>
+    </div>
+  </div>
 
   <div class="head">
     <h2>المقاطع</h2>
@@ -160,6 +227,31 @@ label{font-size:13px;color:var(--text-2);display:block;margin-bottom:5px}
   </div>
   <div class="grid" id="grid"></div>
 </main>
+<div id="calib" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="ضبط القص">
+    <h2>📐 ضبط القص على فريمات حقيقية</h2>
+    <p class="hint" id="calibMsg">جارٍ تحميل الفيديو واستخراج الفريمات…</p>
+    <div class="thumbs" id="calibThumbs"></div>
+    <div class="frameWrap">
+      <img id="calibImg" alt="فريم للقياس">
+      <div id="calibBox"></div>
+    </div>
+    <label>عرض الاقتطاع: <b id="calibScaleV">١٠٠٪</b></label>
+    <input type="range" id="calibScale" min="40" max="100" value="100" style="width:100%">
+    <label>حجم الفريم داخل المخرجات: <b id="calibFrameV">١٠٠٪</b></label>
+    <input type="range" id="calibFrame" min="40" max="100" value="100" style="width:100%">
+    <div class="row" style="margin-top:6px">
+      <button class="ghost" id="fillBlur" type="button" title="ملء الحواف بخلفية ضبابية من نفس الصورة">✨ تعبئة ضبابية</button>
+      <button class="ghost" id="fillBlack" type="button" title="إبقاء الحواف سوداء (ستايل سينمائي)">⬛ أشرطة سوداء</button>
+    </div>
+    <p class="hint">أقل من ١٠٠٪ يصغّر الصورة (zoom out)، والحواف تُملأ حسب اختيارك — ضبابية تلقائية أو سوداء.</p>
+    <div class="acts">
+      <button class="go" id="calibGo">اعتماد وبدء المعالجة</button>
+      <button class="ghost" id="calibAuto">بدء تلقائي بدون قفل</button>
+      <button class="ghost" id="calibX">إلغاء</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -168,14 +260,44 @@ const api = (u, o) => fetch(u, o).then(r => r.ok ? r.json() : r.json().then(e =>
 const POS = [['tl','tc','tr'],['bl','bc','br']];
 let editing = null;
 
-const saved = localStorage.getItem('sabily-theme');
-if (saved) document.documentElement.dataset.theme = saved;
-else if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
+const THEMES = ['auto', 'light', 'dark'];
+const THEME_AR = {auto: 'تلقائي', light: 'فاتح', dark: 'داكن'};
+function applyTheme(mode) {
+  const eff = mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  if (eff === 'dark') document.documentElement.dataset.theme = 'dark';
+  else delete document.documentElement.dataset.theme;
+  $('#theme').textContent = 'المظهر: ' + THEME_AR[mode];
+}
+let themeMode = localStorage.getItem('sabily-theme') || 'auto';
+if (!THEMES.includes(themeMode)) themeMode = 'auto';
+applyTheme(themeMode);
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (themeMode === 'auto') applyTheme('auto'); });
 $('#theme').onclick = () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = next;
-  localStorage.setItem('sabily-theme', next);
+  themeMode = THEMES[(THEMES.indexOf(themeMode) + 1) % THEMES.length];
+  localStorage.setItem('sabily-theme', themeMode);
+  applyTheme(themeMode);
 };
+
+async function serverAction(action, ask) {
+  if (!confirm(ask)) return;
+  try {
+    await api(`/api/server/${action}`, {method: 'POST'});
+    if (action === 'restart') {
+      toast('جارٍ إعادة التشغيل… انتظر لحظات');
+      let n = 0;
+      const t = setInterval(async () => {
+        try { await api('/api/health'); clearInterval(t); toast('عاد السيرفر للعمل ✓'); }
+        catch (e) { if (++n > 20) { clearInterval(t); toast('طال الانتظار — حدّث الصفحة يدوياً'); } }
+      }, 1500);
+    } else {
+      toast('تم إيقاف السيرفر — يمكنك إغلاق الصفحة');
+    }
+  } catch (err) {
+    toast(action === 'shutdown' ? 'تم إيقاف السيرفر — يمكنك إغلاق الصفحة' : String(err));
+  }
+}
+$('#power').onclick = () => serverAction('shutdown', 'إيقاف سيرفر سبيلي؟ لن تعمل الواجهة حتى تُشغّله يدوياً من جديد.');
+$('#restart').onclick = () => serverAction('restart', 'إعادة تشغيل السيرفر؟ سيتوقف لثوانٍ ثم يعود.');
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('on');
@@ -183,19 +305,302 @@ function toast(msg) {
 }
 const ar = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const dur = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
-const esc = s => (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const QDIM = {HD:'٧٢٠×١٢٨٠', FHD:'١٠٨٠×١٩٢٠', QHD:'١٤٤٠×٢٥٦٠'};
+function qnote(){ $('#qnote').textContent = 'المخرجات ' + ($('#quality').value + ' ' + (QDIM[$('#quality').value]||'')) + ' — دائماً نفس الجودة المختارة'; }
+$('#quality').onchange = qnote; qnote();
+
+function notifyDone(ok, msg) {
+  toast(msg);
+  try {
+    if ('Notification' in window && Notification.permission === 'granted')
+      new Notification(ok ? 'اكتملت المعالجة ✓' : 'فشلت المعالجة', {body: String(msg).slice(0, 120)});
+  } catch (e) { /* notifications are best-effort */ }
+}
+
+function jobBody(extra) {
+  const cards = $('#optCards').checked;
+  return Object.assign({url: $('#url').value, clips: +$('#clips').value, aspect: $('#aspect').value, quality: $('#quality').value, brand_watermark: $('#optLogo').checked, show_source: $('#optTag').checked, burn_subtitles: $('#optSubs').checked, intro_card: cards, outro_card: cards}, extra || {});
+}
+
+async function launchJob(body) {
+  const job = await api('/api/jobs', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  $('#prog').hidden = false;
+  $('#zipRow').hidden = true;
+  watch(job.job_id);
+}
 
 $('#form').onsubmit = async e => {
   e.preventDefault();
   $('#go').disabled = true;
   try {
-    const job = await api('/api/jobs', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({url: $('#url').value, clips: +$('#clips').value, aspect: $('#aspect').value})
-    });
-    $('#prog').hidden = false;
-    watch(job.job_id);
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { await Notification.requestPermission(); } catch (e) { /* ignore */ }
+    }
+    if ($('#optCalib').checked) openCalib();
+    else await launchJob(jobBody());
   } catch (err) { toast(String(err)); $('#go').disabled = false; }
+};
+
+/* ---- quick pre-start preview: a random frame from the video middle ---- */
+let pv = null;
+$('#prevBtn').onclick = async () => {
+  const url = $('#url').value.trim();
+  if (!/^https?:\/\/.{6,}/.test(url)) { toast('ضع رابطاً صالحاً يبدأ بـ http'); return; }
+  pv = {url: url, pid: null, frames: [], w: 0, h: 0, suggest: null, title: '', timer: null, idx: -1, fails: 0};
+  $('#pvCard').hidden = false;
+  $('#pvMsg').textContent = 'جارٍ جلب الفيديو واستخراج فريمات حقيقية…';
+  $('#pvImg').removeAttribute('src');
+  $('#pvImg').style.visibility = 'hidden';
+  $('#pvCard').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  try {
+    const p = await api('/api/preview', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})});
+    pv.pid = p.preview_id;
+    pv.timer = setInterval(pollPv, 1500);
+    pollPv();
+  } catch (err) { $('#pvMsg').textContent = 'تعذّرت المعاينة: ' + err; }
+};
+
+async function pollPv() {
+  if (!pv || !pv.pid) return;
+  try {
+    const st = await api(`/api/preview/${pv.pid}`);
+    pv.fails = 0;
+    if (st.status === 'ready') {
+      clearInterval(pv.timer);
+      Object.assign(pv, {frames: st.frames, w: st.width, h: st.height,
+        suggest: st.suggest, title: st.title || '', duration: st.duration});
+      $('#pvShuffle').style.display = '';
+      $('#pvThumbs').innerHTML = pv.frames.map((f, i) =>
+        `<img src="${f}" data-i="${i}" alt="فريم ${i + 1}" style="height:64px">`).join('');
+      [...$('#pvThumbs').children].forEach(img => img.onclick = () => showPvIdx(+img.dataset.i));
+      showRandomPv();
+      toast('المعاينة جاهزة — ٥ فريمات حقيقية');
+    } else if (st.status === 'error') {
+      clearInterval(pv.timer);
+      $('#pvMsg').textContent = 'تعذّرت المعاينة: ' + (st.error || '');
+    }
+  } catch (err) {
+    // NOTE: same as the calib popup — surface a dead server, don't spin.
+    if (++pv.fails > 8) {
+      clearInterval(pv.timer);
+      $('#pvMsg').textContent = 'انقطع الاتصال بالسيرفر أثناء التحميل — أعد فتح المعاينة.';
+    }
+  }
+}
+
+// middle of the video = center frames of the 5-frame spread
+function pvMidIdx() {
+  const n = pv.frames.length;
+  const lo = n > 4 ? 1 : 0, hi = n > 4 ? n - 2 : n - 1;
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
+}
+
+function showPvIdx(i) {
+  if (!pv || !pv.frames.length) return;
+  pv.idx = i;
+  [...$('#pvThumbs').children].forEach((img, j) => img.classList.toggle('on', i === j));
+  const im = $('#pvImg');
+  im.style.visibility = 'hidden';
+  im.onload = () => { im.style.visibility = 'visible'; };
+  im.onerror = () => { $('#pvMsg').textContent = 'تعذّر تحميل الفريم — أعد فتح المعاينة.'; };
+  im.src = pv.frames[i];
+  $('#pvMsg').innerHTML = `<b>${esc(pv.title).slice(0, 60)}</b> — ${pv.w}×${pv.h} — فريم ${ar(i + 1)} من ${ar(pv.frames.length)}`;
+}
+
+function showRandomPv() {
+  if (!pv || !pv.frames.length) return;
+  let i = pvMidIdx(), guard = 0;
+  const cur = $('#pvImg').getAttribute('src');
+  while (pv.frames.length > 1 && pv.frames[i] === cur && guard++ < 8) i = pvMidIdx();
+  showPvIdx(i);
+}
+
+$('#pvShuffle').onclick = () => {
+  if (pv && pv.frames.length) showRandomPv();
+  else toast('لا توجد فريمات بعد — انتظر الاكتمال');
+};
+$('#pvCalib').onclick = () => {
+  if (!pv || !pv.frames.length) { toast('انتظر اكتمال الفريمات'); return; }
+  openCalib(pv);
+};
+$('#pvStart').onclick = async () => {
+  if (!pv || $('#url').value !== pv.url) { toast('الرابط تغيّر — أعد المعاينة'); return; }
+  $('#go').disabled = true;
+  try { await launchJob(jobBody()); }
+  catch (err) { toast(String(err)); $('#go').disabled = false; }
+};
+
+/* ---- crop-calibration popup: measure the cut on real frames ---- */
+let calib = null;
+let calibFails = 0;
+function calibAspect() { return $('#aspect').value === '1:1' ? 1 : 9 / 16; }
+
+function openCalib(existing) {
+  calib = {pid: null, frames: [], w: 0, h: 0, x: 0.5, scale: 1, timer: null, idx: 0};
+  $('#calib').hidden = false;
+  $('#calibMsg').textContent = 'جارٍ تحميل الفيديو واستخراج الفريمات…';
+  $('#calibThumbs').innerHTML = '';
+  $('#calibImg').removeAttribute('src');
+  $('#calibImg').style.visibility = 'hidden';
+  $('#calibScale').value = 100;
+  $('#calibScaleV').textContent = '١٠٠٪';
+  $('#calibFrame').value = 100;
+  $('#calibFrameV').textContent = '١٠٠٪';
+  setFill('blur');
+  calibFails = 0;
+  const useEx = existing && existing.pid && existing.frames && existing.frames.length
+    && existing.url === $('#url').value;
+  if (useEx) {
+    // reuse the quick-preview session: same video, no second download
+    calib.pid = existing.pid;
+    calib.frames = existing.frames; calib.w = existing.w; calib.h = existing.h;
+    if (existing.suggest && typeof existing.suggest.x === 'number') calib.x = existing.suggest.x;
+    calibReady(existing.title || '');
+    return;
+  }
+  api('/api/preview', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url: $('#url').value})}).then(p => {
+    calib.pid = p.preview_id;
+    calib.timer = setInterval(pollCalib, 1500);
+    pollCalib();
+  }).catch(err => { $('#calibMsg').textContent = 'تعذّرت المعاينة: ' + err + ' — ابدأ تلقائياً أو أعد المحاولة.'; });
+}
+
+function calibReady(title) {
+  $('#calibMsg').textContent = (title || '').slice(0, 60) + ` — ${calib.w}×${calib.h} — اسحب المربع وحدد العرض ثم اعتمد`;
+  // NOTE: single-frame preview — no thumbnail strip, just the frame.
+  const multi = calib.frames.length > 1;
+  $('#calibThumbs').style.display = multi ? '' : 'none';
+  $('#calibThumbs').innerHTML = multi ? calib.frames.map((f, i) =>
+    `<img src="${f}" data-i="${i}" alt="فريم ${i + 1}">`).join('') : '';
+  if (multi) [...$('#calibThumbs').children].forEach(img => img.onclick = () => showFrame(+img.dataset.i));
+  showFrame(0);
+}
+
+async function pollCalib() {
+  if (!calib || !calib.pid) return;
+  try {
+    const st = await api(`/api/preview/${calib.pid}`);
+    calibFails = 0;
+    if (st.status === 'ready') {
+      clearInterval(calib.timer);
+      calib.frames = st.frames; calib.w = st.width; calib.h = st.height;
+      if (st.suggest && typeof st.suggest.x === 'number') calib.x = st.suggest.x;
+      calibReady(st.title);
+    } else if (st.status === 'error') {
+      clearInterval(calib.timer);
+      $('#calibMsg').textContent = 'تعذّرت المعاينة: ' + (st.error || '') + ' — ابدأ تلقائياً أو أعد المحاولة.';
+    }
+  } catch (err) {
+    // NOTE: never loop silently — a restarted server (or a second instance)
+    // answers 404 for old ids; say so instead of spinning forever.
+    if (++calibFails > 8) {
+      clearInterval(calib.timer);
+      $('#calibMsg').textContent = 'انقطع الاتصال بالسيرفر أثناء التحميل — أغلق وأعد فتح المعاينة.';
+    }
+  }
+}
+
+function showFrame(i) {
+  calib.idx = i;
+  [...$('#calibThumbs').children].forEach((img, j) => img.classList.toggle('on', i === j));
+  const im = $('#calibImg');
+  im.style.visibility = 'hidden';
+  im.onload = () => { im.style.visibility = 'visible'; };
+  im.onerror = () => { $('#calibMsg').textContent = 'تعذّر تحميل الفريم — أغلق وأعد فتح المعاينة.'; };
+  im.src = calib.frames[i];
+  drawBox();
+}
+
+function drawBox() {
+  const wrap = document.querySelector('.frameWrap');
+  const dispW = wrap.clientWidth;
+  const scale = calib.scale;
+  // max fitting box for the selected aspect, scaled by the slider
+  let bw = dispW * (calibAspect() === 1 ? calib.h / calib.w : (9 / 16) * (calib.h / calib.w));
+  bw = Math.min(dispW, bw) * scale;
+  const bh = bw / calibAspect();
+  const fullH = dispW * calib.h / calib.w;
+  const cx = calib.x * dispW;
+  const box = $('#calibBox');
+  box.style.width = bw + 'px';
+  box.style.height = Math.min(bh, fullH) + 'px';
+  box.style.left = Math.min(Math.max(cx - bw / 2, 0), dispW - bw) + 'px';
+  box.style.top = Math.max((fullH - Math.min(bh, fullH)) / 2, 0) + 'px';
+  box.setAttribute('data-a', $('#aspect').value);
+}
+
+$('#calibScale').oninput = e => {
+  calib.scale = e.target.value / 100;
+  $('#calibScaleV').textContent = String(e.target.value).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) + '٪';
+  drawBox();
+};
+
+$('#calibFrame').oninput = e => {
+  $('#calibFrameV').textContent = String(e.target.value).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) + '٪';
+};
+
+let calibFill = 'blur';
+function setFill(m) {
+  calibFill = m;
+  const on = '2px solid var(--primary)', off = '';
+  $('#fillBlur').style.border = m === 'blur' ? on : off;
+  $('#fillBlack').style.border = m === 'black' ? on : off;
+}
+$('#fillBlur').onclick = () => setFill('blur');
+$('#fillBlack').onclick = () => setFill('black');
+
+(function dragBox() {
+  const box = $('#calibBox');
+  let sx = 0, startX = 0, mv = false;
+  box.addEventListener('pointerdown', e => { box.setPointerCapture(e.pointerId); sx = e.clientX; startX = parseFloat(box.style.left) || 0; mv = true; e.preventDefault(); });
+  box.addEventListener('pointermove', e => {
+    if (!mv) return;
+    const wrap = document.querySelector('.frameWrap');
+    const bw = parseFloat(box.style.width) || 0;
+    const nx = Math.min(Math.max(startX + e.clientX - sx, 0), wrap.clientWidth - bw);
+    box.style.left = nx + 'px';
+    calib.x = (nx + bw / 2) / wrap.clientWidth;
+  });
+  box.addEventListener('pointerup', () => mv = false);
+})();
+
+function closeCalib() {
+  if (calib && calib.timer) clearInterval(calib.timer);
+  calib = null;
+  $('#calib').hidden = true;
+  $('#go').disabled = false;
+}
+$('#calibX').onclick = closeCalib;
+$('#calibAuto').onclick = async () => {
+  const body = jobBody();
+  closeCalib();
+  $('#go').disabled = true;
+  try { await launchJob(body); } catch (err) { toast(String(err)); $('#go').disabled = false; }
+};
+$('#calibGo').onclick = async () => {
+  if (!calib || !calib.frames.length) { toast('انتظر اكتمال الفريمات'); return; }
+  const body = jobBody({crop_x: +calib.x.toFixed(3), crop_scale: +calib.scale.toFixed(2)});
+  const fs = +($('#calibFrame').value / 100).toFixed(2);
+  if (fs < 1) { body.frame_scale = fs; body.fill_mode = calibFill; }
+  closeCalib();
+  $('#go').disabled = true;
+  try { await launchJob(body); } catch (err) { toast(String(err)); $('#go').disabled = false; }
+};
+window.addEventListener('resize', () => { if (calib && calib.frames.length) drawBox(); });
+
+let watching = null;
+$('#cancelBtn').onclick = async () => {
+  if (!watching) return;
+  if (!confirm('إلغاء المهمة الجارية؟')) return;
+  try { await api(`/api/jobs/${watching}/cancel`, {method: 'POST'}); toast('أُرسل طلب الإلغاء…'); }
+  catch (err) { toast(String(err)); }
 };
 
 $('#termBtn').onclick = () => {
@@ -220,7 +625,10 @@ function logLine(text) {
 
 function watch(id) {
   $('#console').innerHTML = '';
+  watching = id;
+  $('#cancelBtn').style.display = '';
   const es = new EventSource(`/api/jobs/${id}/events`);
+  const finish = () => { watching = null; $('#cancelBtn').style.display = 'none'; };
   es.onmessage = ev => {
     const d = JSON.parse(ev.data);
     (d.log || []).forEach(logLine);
@@ -228,32 +636,53 @@ function watch(id) {
     $('#pct').textContent = ar(d.progress) + '٪';
     $('#fill').style.width = d.progress + '%';
     $('#notch').style.right = d.progress + '%';
-    if (d.status === 'done' || d.status === 'error') {
-      es.close(); $('#go').disabled = false;
-      toast(d.status === 'done' ? 'اكتملت المعالجة' : d.error);
+    if (d.status === 'done' || d.status === 'error' || d.status === 'cancelled') {
+      es.close(); $('#go').disabled = false; finish();
+      if (d.status === 'done') {
+        $('#zipLink').href = `/api/jobs/${id}/zip`;
+        $('#zipRow').hidden = false;
+      }
+      notifyDone(d.status === 'done', d.status === 'done' ? 'اكتملت المعالجة' : (d.error || 'أُلغيت المهمة'));
       load();
     }
   };
-  es.onerror = () => { es.close(); $('#go').disabled = false; };
+  es.onerror = () => { es.close(); $('#go').disabled = false; finish(); };
 }
 
 function card(c) {
   const m = c.meta || {};
   const open = editing === c.id;
+  // ids are hex ([a-f0-9]{12}) so safe to interpolate in onclick; video_path is encoded below
+  const vpath = encodeURIComponent(c.video_path).replace(/%2F/g,'/');
+  const badges = [m.quality || '', m.brand_watermark === false ? 'بدون شعار' : '',
+    m.show_source === false ? 'بدون هاشتاق' : '', m.burn_subtitles === false ? 'بدون ترجمة' : '']
+    .filter(Boolean).join(' • ');
   return `<article class="card${open ? ' wide' : ''}" id="c-${c.id}">
-    <video controls preload="metadata" src="/outputs/${c.video_path}?v=${m.rendered_at || 0}"></video>
+    <video controls preload="metadata" src="/outputs/${vpath}?v=${m.rendered_at || 0}"></video>
     <div class="body">
       <p class="title">${esc(c.title)}</p>
-      <div class="meta"><span>${dur(c.end_sec - c.start_sec)}</span><span>من ${dur(c.start_sec)}</span></div>
+      <div class="meta"><span>${dur(c.end_sec - c.start_sec)}</span><span>من ${dur(c.start_sec)}</span>${badges ? `<span>${esc(badges)}</span>` : ''}</div>
       <p class="cap">${esc(c.caption)}</p>
       <div class="acts">
         <button class="ghost" onclick="copyCap('${c.id}')">نسخ الكابشن</button>
-        <a class="ghost" href="/outputs/${c.video_path}" download>تنزيل</a>
+        <a class="ghost" href="/outputs/${vpath}" download>تنزيل</a>
+        <button class="ghost" onclick="previewAudio('${c.id}',this)">▶ استمع</button>
         <button class="ghost" onclick="toggle('${c.id}')">${open ? 'إغلاق التحرير' : 'تحرير'}</button>
       </div>
+      <audio id="au-${c.id}" style="width:100%;display:none" controls preload="none"></audio>
     </div>
     ${open ? editor(c, m) : ''}
   </article>`;
+}
+
+function previewAudio(id, btn) {
+  const au = $(`#au-${id}`);
+  if (!au) return;
+  if (!au.hidden && !au.paused) { au.pause(); btn.textContent = '▶ استمع'; return; }
+  if (!au.src) au.src = `/api/clips/${id}/audio`;
+  au.hidden = false;
+  au.play().then(() => { btn.textContent = '⏸ إيقاف'; }).catch(() => toast('تعذّرت المعاينة الصوتية'));
+  au.onpause = () => { btn.textContent = '▶ استمع'; };
 }
 
 function editor(c, m) {
@@ -265,9 +694,15 @@ function editor(c, m) {
       <input value="${esc(l.text)}" oninput="editLine('${c.id}',${i},this.value)">
     </div>`).join('') || '<p class="hint">لا توجد أسطر ترجمة محفوظة لهذا المقطع.</p>';
 
+  const on = k => (m[k] !== false ? 'checked' : '');
   return `<div class="editor">
     <div><label>العنوان</label><input value="${esc(c.title)}" oninput="field('${c.id}','title',this.value)"></div>
     <div><label>الكابشن</label><textarea rows="5" oninput="field('${c.id}','caption',this.value)">${esc(c.caption)}</textarea></div>
+    <div><label>عناصر الظهور في الفيديو</label><div class="three">
+      <label class="chk"><input type="checkbox" ${on('brand_watermark')} onchange="check('${c.id}','brand_watermark',this)"> الشعار</label>
+      <label class="chk"><input type="checkbox" ${on('show_source')} onchange="check('${c.id}','show_source',this)"> الهاشتاق</label>
+      <label class="chk"><input type="checkbox" ${on('burn_subtitles')} onchange="check('${c.id}','burn_subtitles',this)"> النص السفلي</label>
+    </div></div>
     <div class="two">
       <div><label>الشعار — النص والموضع</label>
         <input value="${esc(m.brand_text || 'سبيلي')}" oninput="field('${c.id}','brand_text',this.value)">
@@ -277,7 +712,7 @@ function editor(c, m) {
         <div class="pos" style="margin-top:8px">${grid('source_pos', m.source_pos || 'tl')}</div></div>
     </div>
     <div><label>أسطر الترجمة</label><div class="lines">${lines}</div></div>
-    <p class="hint">العنوان والكابشن يُحفظان فوراً. تغيير الترجمة أو الشعار يحتاج إعادة رندر.</p>
+    <p class="hint">العنوان والكابشن يُحفظان فوراً. تغيير الترجمة أو الشعار أو إظهار العناصر يحتاج إعادة رندر بنفس الجودة الأصلية.</p>
     <div class="acts">
       <button class="ghost" onclick="save('${c.id}')">حفظ</button>
       <button class="go" onclick="rerender('${c.id}',this)">حفظ وإعادة الرندر</button>
@@ -288,6 +723,7 @@ function editor(c, m) {
 const draft = {};
 const d = id => (draft[id] ||= {lines: null});
 function field(id, key, val) { d(id)[key] = val; }
+function check(id, key, el) { d(id)[key] = el.checked; }
 function editLine(id, i, val) {
   const c = cache.find(x => x.id === id);
   d(id).lines ||= JSON.parse(JSON.stringify(c.meta.lines || []));

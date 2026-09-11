@@ -18,7 +18,7 @@ from pathlib import Path
 
 from app.config import settings
 from app.pipeline.render import subtitles_filter
-from app.pipeline.subtitle import HEADER, _ts
+from app.pipeline.subtitle import _ts, build_header
 
 SAMPLES = [
     "السلام عليكم ورحمة الله وبركاته",
@@ -37,7 +37,7 @@ def main() -> int:
         for i, text in enumerate(SAMPLES)
     ]
     ass.write_text(
-        HEADER.format(w=1080, h=1920, font=settings.subtitle_font, size=64, outline=3, margin=200)
+        build_header(1080, 1920, settings.subtitle_font)
         + "\n".join(body) + "\n",
         encoding="utf-8",
     )

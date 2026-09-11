@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الإعدادات — سبيلي</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#101619;--primary:#1E6F5C;--primary-soft:#E4EFEB;--primary-deep:#14483C;--paper:#F2F4F3;--surface:#fff;--line:#DDE3E1;--text:#101619;--text-2:#5A6663;--text-3:#8A9490;--radius:14px}
+:root[data-theme="dark"]{--paper:#0D1214;--surface:#141B1E;--line:#26312F;--text:#E8EDEB;--text-2:#9AA6A2;--text-3:#6C7874;--primary:#3F9B83;--primary-soft:#16302A;--primary-deep:#8FD1BE}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);font-family:Cairo,system-ui,sans-serif;font-size:15px;line-height:1.7}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.bar{display:flex;align-items:center;justify-content:space-between;height:68px}
+.mark b{font-size:24px;font-weight:700}
+.topnav{display:flex;gap:6px;padding:10px 20px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--line)}
+.topnav a{font-size:13px;color:var(--text-2);text-decoration:none;border:1px solid transparent;border-radius:8px;padding:5px 12px}
+.topnav a:hover{color:var(--text);border-color:var(--line)}
+.topnav a.on{color:var(--primary-deep);border-color:var(--primary);background:var(--primary-soft)}
+h1{font-size:22px;margin:26px 0 4px}.sub{color:var(--text-2);font-size:13.5px;margin:0 0 18px}
+.group{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.group h2{font-size:16px;margin:0 0 12px}
+.f{display:grid;gap:12px}
+label{font-size:13px;color:var(--text-2);display:block;margin-bottom:4px}
+label .src{font-size:11px;color:var(--text-3)}
+input[type=text],input[type=number],select{font:inherit;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:100%;direction:ltr;text-align:left}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary)}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer}
+.grid6{display:grid;grid-template-columns:repeat(3,64px);gap:6px}
+.grid6 button{height:34px;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;color:var(--text-2);font:inherit}
+.grid6 button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.banner{display:none;background:#FFF4E0;border:1px solid #E0B25C;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:14px}
+button.go{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:11px 26px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 18px;font:inherit;color:var(--text-2);cursor:pointer}
+#toast{position:sticky;bottom:18px;margin:0 auto;width:max-content;background:var(--ink);color:#F2F4F3;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.on{opacity:1}
+.foot{padding-bottom:50px}
+</style>
+</head>
+<body>
+<header><div class="wrap bar"><div class="mark"><b>سبيلي</b></div><a href="/" style="font-size:13px">→ الرئيسية</a></div></header>
+<nav class="wrap topnav">
+  <a href="/">الرئيسية</a><a href="/static/appearance.html">تخصيص المخرجات</a>
+  <a href="/static/stats.html">الإحصائيات</a><a href="/static/settings.html" class="on">الإعدادات</a>
+  <a href="/static/video-mockup.html">المعاينة</a>
+</nav>
+<main class="wrap">
+  <h1>الإعدادات</h1>
+  <p class="sub">تحرير ملف <code dir="ltr">.env</code> مباشرة — كل المفاتيح المسموحة فقط. تُطبق القيم بعد إعادة التشغيل.</p>
+  <div class="banner" id="banner">حُفظت القيم — أعد التشغيل لتُطبق: <button class="ghost" id="reboot" style="margin-inline-start:10px">↻ إعادة التشغيل</button></div>
+  <div id="groups"></div>
+  <div class="foot"><button class="go" id="save">حفظ الكل</button></div>
+</main>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const api=(u,o)=>fetch(u,o).then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(e.detail||r.status)));
+const POS=['tl','tc','tr','bl','bc','br'];
+const POSKEYS=new Set(['BRAND_POS','SOURCE_POS']);
+let META={},VAL={};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('on'),2600);}
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function ctl(key,m,v){
+  const src=m.source==='default'?' (افتراضي)':(m.source==='environment'?' (بيئة النظام)':'');
+  if(POSKEYS.has(key))return `<label>${m.label}<span class="src">${src}</span></label><div class="grid6" data-pos="${key}">`+POS.map(p=>`<button type="button" data-p="${p}" class="${v===p?'on':''}">${p}</button>`).join('')+`</div>`;
+  if(m.type==='bool')return `<label class="chk"><input type="checkbox" data-k="${key}" ${v==='true'?'checked':''}> ${m.label}<span class="src">${src}</span></label>`;
+  if(m.type==='enum')return `<label>${m.label}<span class="src">${src}</span></label><select data-k="${key}">`+m.options.map(o=>`<option value="${esc(o)}" ${v===o?'selected':''}>${esc(o)||'—'}</option>`).join('')+`</select>`;
+  if(m.type==='int'||m.type==='float')return `<label>${m.label}<span class="src">${src}</span></label><input type="number" step="any" data-k="${key}" value="${esc(v)}">`;
+  const shown=(m.secret&&v==='')?'(محفوظ — اتركه فارغاً للإبقاء)':'';
+  return `<label>${m.label}<span class="src">${src} ${shown}</span></label><input type="text" data-k="${key}" value="${m.secret?'':esc(v)}" placeholder="${m.secret?'••••••':''}">`;
+}
+async function load(){
+  const d=await api('/api/settings');META=d.keys;
+  const box=$('#groups');box.innerHTML='';
+  for(const[g,gl]of Object.entries(d.groups)){
+    const keys=Object.keys(META).filter(k=>META[k].group===g);if(!keys.length)continue;
+    const sec=document.createElement('div');sec.className='group';
+    sec.innerHTML=`<h2>${gl}</h2><div class="f"></div>`;const f=sec.querySelector('.f');
+    keys.forEach(k=>{VAL[k]=META[k].value;f.insertAdjacentHTML('beforeend',ctl(k,META[k],META[k].value));});
+    box.appendChild(sec);
+  }
+  document.querySelectorAll('[data-pos]').forEach(g=>g.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+    [...g.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');g.dataset.v=b.dataset.p;});
+}
+$('#save').onclick=async()=>{
+  const body={};
+  document.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;
+    const v=el.type==='checkbox'?(el.checked?'true':'false'):el.value;
+    if(v!==VAL[k])body[k]=v;});
+  document.querySelectorAll('[data-pos]').forEach(g=>{if(g.dataset.v)body[g.dataset.pos]=g.dataset.v;});
+  if(!Object.keys(body).length){toast('لا تغييرات');return;}
+  try{const r=await api('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    toast('حُفظ: '+r.saved.join('، '));$('#banner').style.display='block';Object.assign(VAL,body);}catch(e){toast(String(e));}
+};
+$('#reboot').onclick=async()=>{if(!confirm('إعادة تشغيل السيرفر؟'))return;
+  try{await api('/api/server/restart',{method:'POST'});toast('جارٍ إعادة التشغيل…');}catch(e){toast(String(e));}};
+const saved=localStorage.getItem('sabily-theme');
+if(saved==='dark'||(!saved&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='dark';
+load().catch(e=>toast(String(e)));
+</script>
+</body>
+</html>

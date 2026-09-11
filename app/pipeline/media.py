@@ -15,14 +15,31 @@ def probe(video: Path) -> dict:
         "-show_entries", "format=duration",
         "-of", "json", str(video),
     ]
-    out = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
-    data = json.loads(out)
+    try:
+        out = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"ffprobe failed for {video}: {(exc.stderr or '')[-300:]}") from exc
+    except OSError as exc:
+        raise RuntimeError(f"ffprobe failed for {video}: {exc}") from exc
+    try:
+        data = json.loads(out)
+    except ValueError as exc:
+        raise RuntimeError(f"ffprobe failed for {video}: bad output") from exc
     stream = (data.get("streams") or [{}])[0]
-    num, _, den = (stream.get("r_frame_rate") or "25/1").partition("/")
-    fps = float(num) / float(den or 1)
+    num_s, _, den_s = (stream.get("r_frame_rate") or "25/1").partition("/")
+    try:
+        num = float(num_s or 25)
+        den = float(den_s or 1)
+        fps = num / den if den else 25.0
+    except (ValueError, ZeroDivisionError):
+        fps = 25.0
+    width = int(stream.get("width") or 0)
+    height = int(stream.get("height") or 0)
+    if not width or not height:
+        raise RuntimeError(f"تعذّر قراءة أبعاد الفيديو: {video}")
     return {
-        "width": int(stream.get("width") or 0),
-        "height": int(stream.get("height") or 0),
+        "width": width,
+        "height": height,
         "fps": fps or 25.0,
         "duration": float((data.get("format") or {}).get("duration") or 0),
     }

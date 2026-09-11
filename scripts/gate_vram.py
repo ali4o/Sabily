@@ -28,6 +28,10 @@ def vram() -> str:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - StringIO / exotic streams lack reconfigure
+        pass
     settings.ensure_dirs()
     wav = settings.work_dir / "gate_tone.wav"
     subprocess.run(
@@ -50,7 +54,7 @@ def main() -> int:
 
     t0 = time.time()
     meta = llm.generate_metadata("لماذا يفشل أغلب الناس في بناء العادات الجديدة؟ السبب بسيط.")
-    print(f"llm done in {time.time()-t0:.1f}s → {meta}")
+    print(f"llm done in {time.time()-t0:.1f}s -> {meta}")
     print(f"VRAM after llm      : {vram()}")
     print("PASS — الترتيب آمن على هذا الجهاز")
     return 0

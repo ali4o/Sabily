@@ -46,9 +46,22 @@ CREATE TABLE IF NOT EXISTS clips (
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_clips_job ON clips(job_id);
+CREATE TABLE IF NOT EXISTS render_log (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id       TEXT NOT NULL,
+    quality      TEXT DEFAULT '',
+    seconds      REAL DEFAULT 0,
+    ms           INTEGER DEFAULT 0,
+    mb           REAL DEFAULT 0,
+    created_at   REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_render_job ON render_log(job_id);
 """
 
 _lock = threading.Lock()
+
+_JOB_COLS = {"status", "stage", "progress", "title", "error", "options", "updated_at"}
+_CLIP_COLS = {"title", "caption", "score", "video_path", "meta", "start_sec", "end_sec", "idx", "source_url"}
 
 
 def connect() -> sqlite3.Connection:
@@ -63,10 +76,11 @@ def init_db() -> None:
     settings.ensure_dirs()
     with connect() as conn:
         conn.executescript(SCHEMA)
-    # any job left "running" from a crash is not actually running
+    # any job left "running" from a crash is not actually running.
+    # "queued" jobs stay queued so they still run after a restart.
     with connect() as conn:
         conn.execute(
-            "UPDATE jobs SET status='error', error='interrupted' WHERE status IN ('running','queued')"
+            "UPDATE jobs SET status='error', error='interrupted' WHERE status='running'"
         )
         conn.commit()
 
@@ -91,6 +105,9 @@ def create_job(url: str, options: dict[str, Any] | None = None) -> str:
 def update_job(job_id: str, **fields: Any) -> None:
     if not fields:
         return
+    unknown = set(fields) - _JOB_COLS
+    if unknown:
+        raise ValueError(f"unknown field: {sorted(unknown)}")
     fields["updated_at"] = time.time()
     cols = ", ".join(f"{k}=?" for k in fields)
     with _lock, connect() as conn:
@@ -138,6 +155,9 @@ def update_clip(clip_id: str, **fields: Any) -> None:
         fields["meta"] = json.dumps(fields["meta"], ensure_ascii=False)
     if not fields:
         return
+    unknown = set(fields) - _CLIP_COLS
+    if unknown:
+        raise ValueError(f"unknown field: {sorted(unknown)}")
     cols = ", ".join(f"{k}=?" for k in fields)
     with _lock, connect() as conn:
         conn.execute(f"UPDATE clips SET {cols} WHERE id=?", (*fields.values(), clip_id))
@@ -154,6 +174,105 @@ def delete_all_clips() -> None:
     with _lock, connect() as conn:
         conn.execute("DELETE FROM clips")
         conn.commit()
+
+
+def delete_clips_by_job(job_id: str) -> None:
+    with _lock, connect() as conn:
+        conn.execute("DELETE FROM clips WHERE job_id=?", (job_id,))
+        conn.commit()
+
+
+def cancel_job(job_id: str) -> None:
+    update_job(job_id, status="cancelled", stage="ملغي")
+
+
+def log_render(job_id: str, quality: str, seconds: float, ms: int, mb: float) -> None:
+    """One row per rendered clip: quality techniques comparison log."""
+    with _lock, connect() as conn:
+        conn.execute(
+            "INSERT INTO render_log (job_id,quality,seconds,ms,mb,created_at)"
+            " VALUES (?,?,?,?,?,?)",
+            (job_id, quality, seconds, ms, mb, time.time()),
+        )
+        conn.commit()
+
+
+def list_renders(limit: int = 20) -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM render_log ORDER BY created_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def cleanup_old_sources(days: int) -> int:
+    """Delete work/<job> source dirs for finished jobs older than N days.
+
+    Outputs stay. 0/negative disables. Job ids are validated before any
+    deletion — never trust a path built from DB text blindly.
+    """
+    import re
+
+    if days <= 0:
+        return 0
+    cutoff = time.time() - days * 86400
+    removed = 0
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT id FROM jobs WHERE status IN ('done','error','cancelled')"
+            " AND updated_at < ?", (cutoff,)).fetchall()
+    base = settings.work_dir.resolve()
+    for r in rows:
+        jid = r["id"]
+        if not re.fullmatch(r"[a-f0-9]{12}", jid or ""):
+            continue
+        target = (settings.work_dir / jid).resolve()
+        try:
+            if target.parent == base and target.is_dir():
+                import shutil
+
+                shutil.rmtree(target, ignore_errors=True)
+                removed += 1
+        except OSError:
+            continue
+    if removed:
+        log.info("cleanup removed %d old source dirs", removed)
+    return removed
+
+
+def sweep_temp(audio_days: int = 7, bumper_days: int = 30) -> dict[str, int]:
+    """Delete regenerable temp files that otherwise creep forever.
+
+    - work/<job>/audio_<clip>.m4a: on-demand listening cuts, re-cut in ms.
+    - work/<job>/bumper_*.mp4: branded cards, rebuilt when missing.
+    Deliverables (outputs/), sources (needed for re-render) and transcript
+    caches are never touched here.
+    """
+    import time as _time
+
+    now = _time.time()
+    done = {"audio": 0, "bumper": 0}
+    try:
+        base = settings.work_dir.resolve()
+    except OSError:
+        return done
+    if not base.is_dir():
+        return done
+    jobs_root = base.resolve()
+    for path in list(base.rglob("audio_*.m4a")) + list(base.rglob("bumper_*.mp4")):
+        try:
+            if not path.is_file() or not path.resolve().is_relative_to(jobs_root):
+                continue
+            age_days = (now - path.stat().st_mtime) / 86400
+            limit = bumper_days if path.name.startswith("bumper_") else audio_days
+            if age_days > limit:
+                path.unlink(missing_ok=True)
+                done["audio" if limit == audio_days else "bumper"] += 1
+        except OSError:
+            continue
+    if sum(done.values()):
+        log.info("swept temp files: %s", done)
+    return done
 
 
 # --------------------------------------------------------------------------- #
@@ -205,22 +324,25 @@ _worker: threading.Thread | None = None
 MAX_LINES = 500
 _buffers: dict[str, list[str]] = {}
 _current: str | None = None
+_log_lock = threading.Lock()
 
 
 class _JobLogHandler(logging.Handler):
     """Route sabily.* log records into the running job's buffer."""
 
     def emit(self, record: logging.LogRecord) -> None:
-        if _current is None:
+        cur = _current
+        if cur is None:
             return
-        buf = _buffers.setdefault(_current, [])
-        try:
-            stamp = time.strftime("%H:%M:%S", time.localtime(record.created))
-            buf.append(f"{stamp}  {record.levelname[:4]:<4} {record.getMessage()}")
-        except Exception:  # noqa: BLE001 - logging must never raise
-            return
-        if len(buf) > MAX_LINES:
-            del buf[: len(buf) - MAX_LINES]
+        with _log_lock:
+            buf = _buffers.setdefault(cur, [])
+            try:
+                stamp = time.strftime("%H:%M:%S", time.localtime(record.created))
+                buf.append(f"{stamp}  {record.levelname[:4]:<4} {record.getMessage()}")
+            except Exception:  # noqa: BLE001 - logging must never raise
+                return
+            if len(buf) > MAX_LINES:
+                del buf[: len(buf) - MAX_LINES]
 
 
 def attach_log_capture() -> None:
@@ -234,7 +356,8 @@ def attach_log_capture() -> None:
 
 
 def log_lines(job_id: str, after: int = 0) -> tuple[list[str], int]:
-    buf = _buffers.get(job_id, [])
+    with _log_lock:
+        buf = list(_buffers.get(job_id, []))
     after = max(0, min(after, len(buf)))
     return buf[after:], len(buf)
 
@@ -244,7 +367,8 @@ def _loop(handler: Callable[[str], None]) -> None:
     while True:
         job_id = _q.get()
         _current = job_id
-        _buffers.setdefault(job_id, [])
+        with _log_lock:
+            _buffers.setdefault(job_id, [])
         try:
             handler(job_id)
         except Exception as exc:  # noqa: BLE001 - worker must never die
@@ -253,6 +377,14 @@ def _loop(handler: Callable[[str], None]) -> None:
         finally:
             _current = None
             _q.task_done()
+            # buffers are in-memory only (volatile across restarts); cap them
+            # so a long-lived server never grows without bound.
+            with _log_lock:
+                if len(_buffers) > 20:
+                    for k in list(_buffers):
+                        if k != job_id:
+                            _buffers.pop(k, None)
+                            break
 
 
 def start_worker(handler: Callable[[str], None]) -> None:

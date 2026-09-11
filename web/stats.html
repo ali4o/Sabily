@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الإحصائيات — سبيلي</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#101619;--primary:#1E6F5C;--primary-soft:#E4EFEB;--primary-deep:#14483C;--paper:#F2F4F3;--surface:#fff;--line:#DDE3E1;--text:#101619;--text-2:#5A6663;--text-3:#8A9490;--danger:#9B3A2F;--radius:14px}
+:root[data-theme="dark"]{--paper:#0D1214;--surface:#141B1E;--line:#26312F;--text:#E8EDEB;--text-2:#9AA6A2;--text-3:#6C7874;--primary:#3F9B83;--primary-soft:#16302A;--primary-deep:#8FD1BE}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);font-family:Cairo,system-ui,sans-serif;font-size:15px;line-height:1.7}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.bar{display:flex;align-items:center;justify-content:space-between;height:68px}
+.mark b{font-size:24px;font-weight:700}
+.topnav{display:flex;gap:6px;padding:10px 20px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--line)}
+.topnav a{font-size:13px;color:var(--text-2);text-decoration:none;border:1px solid transparent;border-radius:8px;padding:5px 12px}
+.topnav a:hover{color:var(--text);border-color:var(--line)}
+.topnav a.on{color:var(--primary-deep);border-color:var(--primary);background:var(--primary-soft)}
+h1{font-size:22px;margin:26px 0 14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.card b{font-size:26px;display:block}
+.card span{font-size:13px;color:var(--text-2)}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:13.5px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:right}
+th{color:var(--text-2);font-weight:600;background:var(--paper)}
+tr:last-child td{border-bottom:0}
+.ok{color:var(--primary-deep)}.bad{color:var(--danger)}
+button.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 16px;font:inherit;color:var(--text-2);cursor:pointer;margin-bottom:16px}
+#toast{position:sticky;bottom:18px;margin:20px auto 0;width:max-content;background:var(--ink);color:#F2F4F3;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.on{opacity:1}
+.foot{padding-bottom:50px}
+</style>
+</head>
+<body>
+<header><div class="wrap bar"><div class="mark"><b>سبيلي</b></div><a href="/" style="font-size:13px">→ الرئيسية</a></div></header>
+<nav class="wrap topnav">
+  <a href="/">الرئيسية</a><a href="/static/appearance.html">تخصيص المخرجات</a>
+  <a href="/static/stats.html" class="on">الإحصائيات</a><a href="/static/settings.html">الإعدادات</a>
+  <a href="/static/video-mockup.html">المعاينة</a>
+</nav>
+<main class="wrap foot">
+  <h1>الإحصائيات <button class="ghost" id="refresh" style="font-size:12px;padding:5px 12px">↻ تحديث</button></h1>
+  <div class="cards" id="cards"></div>
+  <h2 style="font-size:16px">أحدث المهام</h2>
+  <table><thead><tr><th>المهمة</th><th>الحالة</th><th>مقاطع</th><th>ملاحظة</th></tr></thead>
+  <tbody id="rows"><tr><td colspan="4">…</td></tr></tbody></table>
+  <h2 style="font-size:16px;margin-top:26px">سجل الجودات (آخر الرندرات)</h2>
+  <table><thead><tr><th>الجودة</th><th>المدة</th><th>زمن الرندر</th><th>الحجم</th></tr></thead>
+  <tbody id="renders"><tr><td colspan="4">…</td></tr></tbody></table>
+</main>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const api=(u,o)=>fetch(u,o).then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(e.detail||r.status)));
+const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('on'),2600);}
+const stName={queued:'في الانتظار',running:'تعمل',done:'اكتملت',error:'فشلت',cancelled:'ملغاة'};
+async function load(){
+  const s=await api('/api/stats');
+  const card=(v,l)=>`<div class="card"><b>${v}</b><span>${l}</span></div>`;
+  $('#cards').innerHTML=
+    card(ar(s.jobs_total),'مهمة')+card(ar(s.clips_total),'مقطعاً')+
+    card(ar(s.rendered_min),'دقيقة ممنتجة')+
+    card(ar(s.disk_mb.outputs),'م.ب مخرجات')+card(ar(s.disk_mb.work),'م.ب عمل مؤقت')+
+    card(ar(s.by_status.done||0),'ناجحة')+card(ar(s.by_status.error||0),'فاشلة');
+  $('#rows').innerHTML=s.recent.length?s.recent.map(j=>{
+    const cls=j.status==='done'?'ok':(j.status==='error'?'bad':'');
+    const note=j.status==='error'?(j.error||j.stage):(j.title||'').slice(0,50);
+    return `<tr><td dir="ltr" style="text-align:left;font-size:12px">${j.id}</td><td class="${cls}">${stName[j.status]||j.status}</td><td>${ar(j.clips)}</td><td>${note.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</td></tr>`;
+  }).join(''):'<tr><td colspan="4">لا مهام بعد</td></tr>';
+  $('#renders').innerHTML=(s.renders||[]).length?s.renders.map(r=>
+    `<tr><td dir="ltr">${r.quality||''}</td><td>${ar(Math.round(r.seconds||0))} ث</td><td>${ar((r.ms||0)/1000)} ث</td><td>${ar(r.mb||0)} م.ب</td></tr>`
+  ).join(''):'<tr><td colspan="4">لا رندرات مسجلة بعد</td></tr>';
+}
+$('#refresh').onclick=()=>load().catch(e=>toast(String(e)));
+const saved=localStorage.getItem('sabily-theme');
+if(saved==='dark'||(!saved&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='dark';
+load().catch(e=>toast(String(e)));
+</script>
+</body>
+</html>

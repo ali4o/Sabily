@@ -34,7 +34,21 @@ def report(status: str, name: str, detail: str = "") -> None:
 
 
 def section(title: str) -> None:
-    print(f"\n{'─' * 62}\n  {title}\n{'─' * 62}", flush=True)
+    bar = "─" * 62
+    try:
+        bar.encode(sys.stdout.encoding or "utf-8")
+    except Exception:  # noqa: BLE001 - cp1256 and friends lack ─
+        bar = "-" * 62
+    print(f"\n{bar}\n  {title}\n{bar}", flush=True)
+
+
+def _sep() -> str:
+    bar = "─" * 62
+    try:
+        bar.encode(sys.stdout.encoding or "utf-8")
+    except Exception:  # noqa: BLE001
+        return "-" * 62
+    return bar
 
 
 def run(cmd: list[str], timeout: int = 60) -> tuple[int, str]:
@@ -164,7 +178,7 @@ def check_arabic_render() -> None:
     """The decisive test: does a real Arabic line survive the whole render path?"""
     section("5. رسم النص العربي")
     from app.pipeline.render import subtitles_filter
-    from app.pipeline.subtitle import HEADER, _ts
+    from app.pipeline.subtitle import _ts, build_header
 
     settings.ensure_dirs()
     ass = settings.work_dir / "doctor.ass"
@@ -173,8 +187,7 @@ def check_arabic_render() -> None:
     body = [f"Dialogue: 0,{_ts(0)},{_ts(5)},Sabily,0,0,{150 + i * 180},,{s}"
             for i, s in enumerate(samples)]
     ass.write_text(
-        HEADER.format(w=1080, h=1920, font=settings.subtitle_font,
-                      size=64, outline=3, margin=200) + "\n".join(body) + "\n",
+        build_header(1080, 1920, settings.subtitle_font) + "\n".join(body) + "\n",
         encoding="utf-8",
     )
 
@@ -335,6 +348,16 @@ def check_selection() -> None:
         t += 0.8
         i += 1
 
+    try:
+        from app.pipeline import reframe
+
+        kind, _ = reframe._detector()
+        detail = {"yunet": "YuNet (الأدق)", "haar": "Haar أمامي + جانبي"}.get(kind, kind)
+        report(OK, f"كاشف الوجوه: {detail}",
+               f"تغطية دنيا {settings.face_min_coverage} ثم إطار كامل بخلفية ضبابية")
+    except Exception as exc:  # noqa: BLE001
+        report(WARN, "كاشف الوجوه", f"{exc} — سيُستخدم الإطار الكامل")
+
     picks = select(words, limit=3)
     if not picks:
         report(BAD, "لم يُنتج أي مرشح من نص اصطناعي")
@@ -409,6 +432,10 @@ def check_url(url: str) -> None:
 # --------------------------------------------------------------------------- #
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - StringIO / exotic streams lack reconfigure
+        pass
     ap = argparse.ArgumentParser(prog="sabily-doctor")
     ap.add_argument("--url", default="", help="افحص رابط فيديو بدون تحميله")
     ap.add_argument("--quick", action="store_true", help="تخطَّ تحميل النماذج")

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>المعاينة الحقيقية — سبيلي</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#101619;--primary:#1E6F5C;--primary-soft:#E4EFEB;--primary-deep:#14483C;
+  --paper:#F2F4F3;--surface:#fff;--line:#DDE3E1;--line-soft:#EAEEEC;
+  --text:#101619;--text-2:#5A6663;--text-3:#8A9490;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);font-family:Cairo,system-ui,sans-serif;font-size:15px;line-height:1.7}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.bar{display:flex;align-items:center;justify-content:space-between;height:68px}
+.mark b{font-size:24px;font-weight:700}
+.topnav{display:flex;gap:6px;padding:10px 20px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--line)}
+.topnav a{font-size:13px;color:var(--text-2);text-decoration:none;border:1px solid transparent;border-radius:8px;padding:5px 12px}
+.topnav a:hover{color:var(--text);border-color:var(--line)}
+.topnav a.on{color:var(--primary-deep);border-color:var(--primary);background:var(--primary-soft)}
+h1{font-size:22px;margin:26px 0 4px}.sub{color:var(--text-2);font-size:13.5px;margin:0 0 18px;max-width:70ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 4px}
+.card .why{font-size:12.5px;color:var(--text-3);margin:0 0 12px}
+label{font-size:13px;color:var(--text-2);display:block;margin-bottom:4px}
+input[type=url],input[type=text],select{font:inherit;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+input[type=range]{width:100%}
+button.go{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:10px 22px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 16px;font:inherit;color:var(--text-2);cursor:pointer;font-size:13.5px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row>div{flex:1;min-width:150px}
+.grid6{display:grid;grid-template-columns:repeat(3,64px);gap:6px}
+.grid6 button{height:32px;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;color:var(--text-2);font:inherit;font-size:12px}
+.grid6 button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
+.thumbs img{height:86px;border-radius:8px;flex:none;background:#000}
+.meta{font-size:13px;color:var(--text-2)}
+.meta b{color:var(--text)}
+video{width:100%;max-width:340px;aspect-ratio:9/16;max-height:520px;object-fit:contain;background:#000;display:block;border-radius:12px}
+video.square{aspect-ratio:1/1}
+.info{font-size:13px;color:var(--text-2);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;white-space:pre-wrap}
+.hint{font-size:12.5px;color:var(--text-3);margin:8px 0 0}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.chk input{width:17px;height:17px;accent-color:var(--primary)}
+#toast{position:sticky;bottom:18px;margin:0 auto;width:max-content;background:var(--ink);color:#F2F4F3;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.on{opacity:1}
+.foot{padding-bottom:50px}
+</style>
+</head>
+<body>
+<header><div class="wrap bar"><div class="mark"><b>سبيلي</b></div><a href="/" style="font-size:13px">→ الرئيسية</a></div></header>
+<nav class="wrap topnav">
+  <a href="/">الرئيسية</a><a href="/static/appearance.html">تخصيص المخرجات</a>
+  <a href="/static/stats.html">الإحصائيات</a><a href="/static/settings.html">الإعدادات</a>
+  <a href="/static/video-mockup.html" class="on">المعاينة</a>
+</nav>
+<main class="wrap">
+  <h1>المعاينة الحقيقية</h1>
+  <p class="sub">ما تراه هنا <b>مقطع MP4 حقيقي</b> رندره السيرفر بنفس سلسلة الإنتاج تماماً (نفس القص، نفس ملف الترجمة، نفس الشعار، نفس ffmpeg). ما يُعرض هو ما سيُنتَج.</p>
+
+  <div class="card">
+    <h2>١ — مصدر حقيقي</h2>
+    <p class="why">يُحمَّل الفيديو مرة واحدة وتُستخرج منه فريمات حقيقية — لا صور توضيحية.</p>
+    <div class="row">
+      <div style="flex:3"><label>رابط الفيديو</label><input type="url" id="url" style="width:100%" placeholder="https://youtube.com/watch?v=…"></div>
+      <div><button class="go" id="fetch">جلب الفريمات</button></div>
+    </div>
+    <p class="meta" id="srcMeta" style="margin-top:10px"></p>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+
+  <div class="card">
+    <h2>٢ — نفس خيارات المهمة</h2>
+    <p class="why">القيم الفارغة تعني «إعدادات السيرفر» — تماماً كما تفعل المهمة الحقيقية.</p>
+    <div class="row">
+      <div><label>الجودة</label><select id="q" style="width:100%"><option value="HD">HD ٧٢٠</option><option value="FHD">FHD ١٠٨٠</option><option value="QHD">2K ١٤٤٠</option></select></div>
+      <div><label>الأبعاد</label><select id="asp" style="width:100%"><option value="9:16">طولي ٩:١٦</option><option value="1:1">مربع ١:١</option></select></div>
+      <div><label>القص</label><select id="cropMode" style="width:100%"><option value="auto">تلقائي — تتبع الوجه (كالمهمة)</option><option value="manual">يدوي — قفل x ثابت</option></select></div>
+    </div>
+    <div id="manualBox" style="display:none;margin-top:12px">
+      <label>موضع القص الأفقي: <b id="cropXV">٥٠٪</b></label>
+      <input type="range" id="cropX" min="0" max="100" value="50">
+      <label style="margin-top:8px">عرض الاقتطاع: <b id="cropSV">١٠٠٪</b></label>
+      <input type="range" id="cropS" min="40" max="100" value="100">
+    </div>
+    <div class="two" style="margin-top:12px">
+      <div><label>موضع الشعار (BRAND_POS)</label><div class="grid6" id="logoGrid"></div></div>
+      <div><label>موضع الهاشتاق (SOURCE_POS)</label><div class="grid6" id="tagGrid"></div></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label class="chk"><input type="checkbox" id="vLogo" checked> الشعار</label>
+      <label class="chk"><input type="checkbox" id="vTag" checked> الهاشتاق</label>
+      <label class="chk"><input type="checkbox" id="vSub" checked> النص السفلي</label>
+    </div>
+    <div style="margin-top:12px"><label>حجم الفريم داخل المخرجات: <b id="fsV">١٠٠٪</b></label>
+      <input type="range" id="fs" min="40" max="100" value="100" style="width:100%">
+      <div class="row" style="margin-top:6px">
+        <div style="flex:0"><button class="ghost" id="fillBlur" type="button">✨ تعبئة ضبابية</button></div>
+        <div style="flex:0"><button class="ghost" id="fillBlack" type="button">⬛ أشرطة سوداء</button></div>
+      </div>
+      <p class="hint" style="font-size:12px;color:var(--text-2)">أقل من ١٠٠٪ يصغّر الصورة (zoom out)، والحواف حسب اختيارك.</p></div>
+    <div style="margin-top:12px"><label>سطر الترجمة في المعاينة (يمر بنفس خلط العربي/الإنجليزي)</label>
+      <input type="text" id="sampleText" style="width:100%" value="نستخدم تقنية AP36 في خط الإنتاج - الجزء 3"></div>
+  </div>
+
+  <div class="card">
+    <h2>٣ — رندر حقيقي وشاهد</h2>
+    <p class="why">مقطع ٣ ثوانٍ من منتصف المصدر، بنفس <code dir="ltr">render_clip</code> والتحقق من الأبعاد. زر «بدء مهمة» يرسل الخيارات نفسها حرفياً.</p>
+    <div class="row">
+      <div style="flex:0"><button class="go" id="render">رندر معاينة حقيقية</button></div>
+      <div style="flex:0"><button class="ghost" id="toJob">بدء مهمة بهذه الإعدادات</button></div>
+    </div>
+    <div class="two" style="margin-top:14px">
+      <div><video id="player" controls preload="metadata" playsinline></video></div>
+      <div><div class="info" id="renderInfo">لا يوجد رندر بعد.</div>
+        <p class="hint">الأحجام والخطوط ومواضع الزوايا من خط الإنتاج في السيرفر (حجم الشعار من الإعدادات) — لا توجد قيم تجريبية في هذه الصفحة.</p></div>
+    </div>
+  </div>
+  <div class="foot"></div>
+</main>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const api=(u,o)=>fetch(u,o).then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(e.detail||r.status)));
+const POS=['tl','tc','tr','bl','bc','br'];
+const S={pid:null,timer:null,logo:null,tag:null,w:0,h:0,fill:'blur',fails:0};
+function setFill(m){S.fill=m;
+  $('#fillBlur').style.border=m==='blur'?'2px solid var(--primary)':'';
+  $('#fillBlack').style.border=m==='black'?'2px solid var(--primary)':'';}
+$('#fillBlur').onclick=()=>setFill('blur');$('#fillBlack').onclick=()=>setFill('black');setFill('blur');
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('on'),2800);}
+const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+function mkGrid(el,cb){POS.forEach(p=>{const b=document.createElement('button');b.textContent=p;b.dataset.p=p;b.onclick=()=>cb(p,b);el.appendChild(b);});}
+function paintGrid(el,cur){[...el.children].forEach(b=>b.classList.toggle('on',b.dataset.p===cur));}
+mkGrid($('#logoGrid'),p=>{S.logo=p;paintGrid($('#logoGrid'),p);});
+mkGrid($('#tagGrid'),p=>{S.tag=p;paintGrid($('#tagGrid'),p);});
+$('#cropMode').onchange=()=>{$('#manualBox').style.display=$('#cropMode').value==='manual'?'':'none';};
+$('#cropX').oninput=e=>{$('#cropXV').textContent=ar(e.target.value)+'٪';};
+$('#cropS').oninput=e=>{$('#cropSV').textContent=ar(e.target.value)+'٪';};
+$('#fs').oninput=e=>{$('#fsV').textContent=ar(e.target.value)+'٪';};
+
+// init from the server so defaults match what jobs actually use
+api('/api/health').then(h=>{if(h.quality)$('#q').value=h.quality;}).catch(()=>{});
+api('/api/settings').then(d=>{const k=d.keys||{};
+  const b=(n,el)=>{if(k[n]&&k[n].value!==undefined)$(el).checked=k[n].value==='true';};
+  b('BRAND_WATERMARK','#vLogo');b('SOURCE_TAG','#vTag');b('BURN_SUBTITLES','#vSub');
+  if(k.BRAND_POS)paintGrid($('#logoGrid'),S.logo=k.BRAND_POS.value);
+  if(k.SOURCE_POS)paintGrid($('#tagGrid'),S.tag=k.SOURCE_POS.value);
+}).catch(()=>{});
+
+$('#fetch').onclick=async()=>{
+  const url=$('#url').value.trim();
+  if(!/^https?:\/\/.{6,}/.test(url)){toast('ضع رابطاً صالحاً يبدأ بـ http');return;}
+  $('#fetch').disabled=true;
+  try{
+    const p=await api('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    S.pid=p.preview_id;clearInterval(S.timer);S.timer=setInterval(poll,1500);S.fails=0;poll();
+    $('#srcMeta').textContent='جارٍ التحميل واستخراج الفريمات الحقيقية…';
+  }catch(e){toast(String(e));$('#fetch').disabled=false;}
+};
+async function poll(){
+  if(!S.pid)return;
+  try{
+    const st=await api(`/api/preview/${S.pid}`);
+    if(st.status==='ready'){
+      clearInterval(S.timer);$('#fetch').disabled=false;
+      S.w=st.width;S.h=st.height;
+      $('#srcMeta').innerHTML=`<b>${(st.title||'').slice(0,60)}</b> — ${st.width}×${st.height} — ${ar(st.duration)} ثانية`+
+        (st.suggest&&st.suggest.face?' — وُجد وجه، والاقتراح من موضعه الحقيقي':' — لا وجه واضح، الاقتراح من المنتصف');
+      $('#thumbs').innerHTML=(st.frames||[]).map(f=>`<img src="${f}" alt="فريم حقيقي">`).join('');
+      if(st.suggest&&typeof st.suggest.x==='number'){$('#cropX').value=Math.round(st.suggest.x*100);$('#cropXV').textContent=ar($('#cropX').value)+'٪';}
+      toast('الفريمات جاهزة — اضبط الخيارات ثم رندر');
+    }else if(st.status==='error'){clearInterval(S.timer);$('#fetch').disabled=false;$('#srcMeta').textContent='تعذّر: '+(st.error||'');}
+  }catch(e){
+    // NOTE: surface a dead/restarted server instead of polling forever.
+    if(++S.fails>8){clearInterval(S.timer);$('#fetch').disabled=false;$('#srcMeta').textContent='انقطع الاتصال بالسيرفر أثناء التحميل — أعد المحاولة.';}
+  }
+}
+function body(){
+  const b={quality:$('#q').value,aspect:$('#asp').value,
+    brand_watermark:$('#vLogo').checked,show_source:$('#vTag').checked,burn_subtitles:$('#vSub').checked,
+    sample_text:$('#sampleText').value};
+  if(S.logo)b.brand_pos=S.logo;
+  if(S.tag)b.source_pos=S.tag;
+  const fs=+($('#fs').value/100).toFixed(2);
+  if(fs<1){b.frame_scale=fs;b.fill_mode=S.fill;}
+  if($('#cropMode').value==='manual'){b.crop_x=+($('#cropX').value/100).toFixed(3);b.crop_scale=+($('#cropS').value/100).toFixed(2);}
+  return b;
+}
+$('#render').onclick=async()=>{
+  if(!S.pid){toast('اجلب الفريمات أولاً');return;}
+  $('#render').disabled=true;$('#renderInfo').textContent='جارٍ الرندر بنفس سلسلة الإنتاج…';
+  try{
+    const r=await api(`/api/preview/${S.pid}/render`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body())});
+    const v=$('#player');v.src=r.video;v.classList.toggle('square',r.aspect==='1:1');v.play().catch(()=>{});
+    $('#renderInfo').textContent=
+      `الفيديو: ${r.width}×${r.height} (المطلوب ${r.target_size[0]}×${r.target_size[1]}) — ${r.quality} ${r.aspect}\n`+
+      `القص: ${r.crop.mode} — ${r.crop.w}×${r.crop.h} عند x=${r.crop.x_expr}\n`+
+      `حجم الفريم: ${ar(Math.round((r.frame_scale||1)*100))}٪${(r.frame_scale||1)<1?` (الحواف: ${r.fill_mode==='black'?'أسود':'بلور'})`:''}\n`+
+      `المقطع من ${r.start} إلى ${r.end} ثانية من المصدر الحقيقي\n`+
+      `رابط الملف: ${r.video}`;
+  }catch(e){$('#renderInfo').textContent='فشل الرندر: '+e;}
+  $('#render').disabled=false;
+};
+$('#toJob').onclick=async()=>{
+  const url=$('#url').value.trim();
+  if(!/^https?:\/\/.{6,}/.test(url)){toast('ضع رابطاً صالحاً أولاً');return;}
+  const b=Object.assign({url},body());delete b.sample_text;
+  try{
+    const j=await api('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+    toast('بدأت المهمة — تابعها من الرئيسية');location.href='/#'+j.job_id;
+  }catch(e){toast(String(e));}
+};
+</script>
+</body>
+</html>

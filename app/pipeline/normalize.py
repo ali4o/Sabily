@@ -16,6 +16,7 @@ import copy
 import difflib
 import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Iterable
@@ -155,10 +156,14 @@ def learn(old_lines: list[dict], new_lines: list[dict], limit: int = 12) -> dict
     if not learned:
         return {}
     replace.update(learned)
+    if len(replace) > 500:
+        replace = dict(list(replace.items())[-500:])
     terms["replace"] = replace
     settings.terms_file.parent.mkdir(parents=True, exist_ok=True)
-    settings.terms_file.write_text(
+    tmp = settings.terms_file.with_name(settings.terms_file.name + ".tmp")
+    tmp.write_text(
         json.dumps(terms, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    os.replace(tmp, settings.terms_file)
     log.info("learned %d term(s) from edits: %s", len(learned), learned)
     return learned
